@@ -1,5 +1,17 @@
 import { dowOf, TODAY_DATE } from './timeHelpers';
-import { historyDates } from '../data/initialData';
+
+/** Array of 7 date strings (YYYY-MM-DD) for the current Mon-Sun week */
+export const CURRENT_WEEK_DATES = (() => {
+  const today = new Date();
+  const dow = today.getDay(); // 0 = Sun
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((dow + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d.toISOString().slice(0, 10);
+  });
+})();
 
 export const LEVEL_THRESHOLDS = [0, 250, 600, 1050, 1600, 2250, 3000, 3850, 4800, 5850, 7000, 8000, 10000, 12500, 15500, 19000, 23000, 27500, 32500, 38000];
 export const LEVEL_TITLES = [
@@ -26,6 +38,28 @@ export function levelInfo(xp) {
 
 export const pct = (obtained, max) => Math.round((obtained / max) * 1000) / 10;
 
+export function computePercentile(rank, totalStudents, explicitPercentile) {
+  if (explicitPercentile !== undefined && explicitPercentile !== null && explicitPercentile !== '') {
+    return Number(explicitPercentile);
+  }
+  if (rank && totalStudents && totalStudents > 0) {
+    const calculated = ((totalStudents - rank + 1) / totalStudents) * 100;
+    return Math.round(calculated * 100) / 100;
+  }
+  return null;
+}
+
+export function computeProjectedAIR(rank, totalStudents, explicitExpectedRank) {
+  if (explicitExpectedRank !== undefined && explicitExpectedRank !== null && explicitExpectedRank !== '') {
+    return explicitExpectedRank;
+  }
+  if (rank && totalStudents && totalStudents > 0) {
+    const projected = Math.max(1, Math.round(rank * (150000 / totalStudents)));
+    return `AIR ~${projected.toLocaleString()}`;
+  }
+  return null;
+}
+
 export function plannedForDate(timetable, dateStr) {
   const dow = dowOf(dateStr);
   return (timetable[dow] || []).reduce((a, s) => a + (s.end - s.start), 0);
@@ -40,7 +74,8 @@ export function actualForDateSubject(studyLog, dateStr, subject) {
 }
 
 export function dailyRows(timetable, studyLog) {
-  return historyDates.map((date) => ({
+  const dates = Array.from(new Set([...studyLog.map((e) => e.date), TODAY_DATE])).sort();
+  return dates.map((date) => ({
     date,
     planned: plannedForDate(timetable, date),
     actual: actualForDate(studyLog, date)
@@ -50,8 +85,8 @@ export function dailyRows(timetable, studyLog) {
 export function computeStreak(rows) {
   let streak = 0;
   for (let i = rows.length - 1; i >= 0; i--) {
-    const c = rows[i].planned > 0 ? (rows[i].actual / rows[i].planned) * 100 : 0;
-    if (c >= 80) streak++; else break;
+    const c = rows[i].planned > 0 ? (rows[i].actual / rows[i].planned) * 100 : (rows[i].actual > 0 ? 100 : 0);
+    if (c >= 80 || rows[i].actual >= 120) streak++; else break;
   }
   return streak;
 }
@@ -60,7 +95,12 @@ export function subjectHistory(tests, subject) {
   return tests
     .filter((t) => t.subject === subject)
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((t) => ({ ...t, pct: pct(t.marksObtained, t.maxMarks) }));
+    .map((t) => ({
+      ...t,
+      pct: pct(t.marksObtained, t.maxMarks),
+      percentile: computePercentile(t.rank, t.totalStudents, t.percentile),
+      projectedAIR: computeProjectedAIR(t.rank, t.totalStudents, t.expectedRank)
+    }));
 }
 
 export function subjectStats(tests, subject) {
@@ -99,6 +139,82 @@ export function testXP(test, prevTest) {
   return xp;
 }
 
+export function computeStudyAchievements(timetable, studyLog) {
+  if (!studyLog.length) {
+    return {
+      maxDay: { date: '-', min: 0, label: '0h' },
+      weekly: { planned: 0, actual: 0, pctVal: 0, label: '0h / 0h' },
+      monthly: { planned: 0, actual: 0, pctVal: 0, label: '0h / 0h' },
+      quarterly: { planned: 0, actual: 0, pctVal: 0, label: '0h / 0h' }
+    };
+  }
+
+  // Max study day calculation
+  const dayMap = {};
+  studyLog.forEach((e) => {
+    dayMap[e.date] = (dayMap[e.date] || 0) + e.duration;
+  });
+
+  let maxDate = TODAY_DATE;
+  let maxMin = 0;
+  Object.entries(dayMap).forEach(([d, min]) => {
+    if (min > maxMin) {
+      maxMin = min;
+      maxDate = d;
+    }
+  });
+
+  const currentYearMonth = TODAY_DATE.slice(0, 7);
+
+  // Group study time
+  const totalActualMin = studyLog.reduce((a, e) => a + e.duration, 0);
+  const monthlyActualMin = studyLog.filter((e) => e.date.startsWith(currentYearMonth)).reduce((a, e) => a + e.duration, 0);
+
+  const plannedPerDay = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    .reduce((a, dow) => a + (timetable[dow] || []).reduce((s, slot) => s + (slot.end - slot.start), 0), 0);
+
+  const weeklyPlannedMin = plannedPerDay;
+  const weeklyActualMin = studyLog.filter((e) => {
+    const d = new Date(e.date);
+    const now = new Date(TODAY_DATE);
+    const diffDays = Math.abs((now - d) / (1000 * 60 * 60 * 24));
+    return diffDays <= 7;
+  }).reduce((a, e) => a + e.duration, 0);
+
+  const monthlyPlannedMin = weeklyPlannedMin * 4;
+  const quarterlyPlannedMin = weeklyPlannedMin * 12;
+
+  const weeklyPct = weeklyPlannedMin > 0 ? Math.round((weeklyActualMin / weeklyPlannedMin) * 100) : (weeklyActualMin > 0 ? 100 : 0);
+  const monthlyPct = monthlyPlannedMin > 0 ? Math.round((monthlyActualMin / monthlyPlannedMin) * 100) : (monthlyActualMin > 0 ? 100 : 0);
+  const quarterlyPct = quarterlyPlannedMin > 0 ? Math.round((totalActualMin / quarterlyPlannedMin) * 100) : (totalActualMin > 0 ? 100 : 0);
+
+  return {
+    maxDay: {
+      date: maxDate,
+      min: maxMin,
+      label: `${(maxMin / 60).toFixed(1)} hrs (${maxDate})`
+    },
+    weekly: {
+      planned: weeklyPlannedMin,
+      actual: weeklyActualMin,
+      pctVal: Math.min(100, weeklyPct),
+      label: `${(weeklyActualMin / 60).toFixed(1)}h / ${(weeklyPlannedMin / 60).toFixed(1)}h`
+    },
+    monthly: {
+      planned: monthlyPlannedMin,
+      actual: monthlyActualMin,
+      pctVal: Math.min(100, monthlyPct),
+      label: `${(monthlyActualMin / 60).toFixed(1)}h / ${(monthlyPlannedMin / 60).toFixed(1)}h`
+    },
+    quarterly: {
+      planned: quarterlyPlannedMin,
+      actual: totalActualMin,
+      pctVal: Math.min(100, quarterlyPct),
+      label: `${(totalActualMin / 60).toFixed(1)}h / ${(quarterlyPlannedMin / 60).toFixed(1)}h`
+    }
+  };
+}
+
 export const PERIOD_TIER_NAMES = {
   Weekly: [
     { min: 100, name: 'Perfect Week Reward' },
@@ -132,29 +248,16 @@ export function nextTierFor(period, p) {
   return null;
 }
 
-export const CURRENT_WEEK_DATES = ['2026-08-02', '2026-08-03', '2026-08-04', '2026-08-05', '2026-08-06', '2026-08-07', '2026-08-08'];
-
 export function computePeriodRewards(timetable, studyLog) {
-  const rows = [
-    ...historyDates.map((d) => ({ date: d, planned: plannedForDate(timetable, d), actual: actualForDate(studyLog, d) })),
-    { date: TODAY_DATE, planned: plannedForDate(timetable, TODAY_DATE), actual: actualForDate(studyLog, TODAY_DATE) }
-  ];
-  const agg = (filtered) => {
-    const planned = filtered.reduce((a, r) => a + r.planned, 0);
-    const actual = filtered.reduce((a, r) => a + r.actual, 0);
-    return { planned, actual, pctVal: planned > 0 ? Math.round((actual / planned) * 1000) / 10 : 0 };
-  };
-  const w = agg(rows.filter((r) => CURRENT_WEEK_DATES.includes(r.date)));
-  const m = agg(rows.filter((r) => r.date >= '2026-08-01'));
-  const q = agg(rows);
+  const achievements = computeStudyAchievements(timetable, studyLog);
 
   const build = (period, cycleId, cycleLabel, a) => ({
     period, cycleId, cycleLabel, ...a, tier: tierFor(period, a.pctVal), next: nextTierFor(period, a.pctVal)
   });
 
   return [
-    build('Weekly', 'week-2026-W32', 'This week (2–8 Aug)', w),
-    build('Monthly', 'month-2026-08', 'August 2026 (so far)', m),
-    build('Quarterly', 'quarter-2026-Q3', 'Jul–Sep 2026 (so far)', q),
+    build('Weekly', 'week-current', 'This Week Target', achievements.weekly),
+    build('Monthly', 'month-current', 'This Month Target', achievements.monthly),
+    build('Quarterly', 'quarter-current', 'Quarterly Target', achievements.quarterly),
   ];
 }

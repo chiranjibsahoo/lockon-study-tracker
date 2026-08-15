@@ -11,20 +11,33 @@ export function EditTestModal({ test, onSave, onClose }) {
   const [marksObtained, setMarksObtained] = useState(test.marksObtained || 0);
   const [rank, setRank] = useState(test.rank || '');
   const [totalStudents, setTotalStudents] = useState(test.totalStudents || '');
+  const [percentile, setPercentile] = useState(test.percentile || '');
+  const [expectedRank, setExpectedRank] = useState(test.expectedRank || '');
+  const [testScope, setTestScope] = useState(test.testScope || 'Milestone Test');
   const [difficulty, setDifficulty] = useState(test.difficulty || 'Moderate');
   const [testType, setTestType] = useState(test.testType || 'JEE Main Pattern');
   const [notes, setNotes] = useState(test.notes || '');
   const [date, setDate] = useState(test.date || '');
 
   const subjectOptions = [...SUBJECTS.map((s) => s.key), 'Combined'];
-  const testTypes = [
+  const testScopes = [
+    'Milestone Test',
+    'Major Test',
+    'AITS (All India Test Series)',
+    'Weekly Test',
+    'Full Mock Test',
+    'Unit Test',
     'Chapter Test',
+    'Other',
+  ];
+  const testTypes = [
+    'JEE Main Pattern',
+    'JEE Advanced Pattern',
+    'CBSE Pattern',
     'Unit Test',
     'Monthly Test',
     'Half Yearly',
     'Final',
-    'JEE Main Pattern',
-    'JEE Advanced Pattern',
     'Mock Test',
     'Other',
   ];
@@ -41,6 +54,9 @@ export function EditTestModal({ test, onSave, onClose }) {
       marksObtained: Number(marksObtained),
       rank: rank ? Number(rank) : undefined,
       totalStudents: totalStudents ? Number(totalStudents) : undefined,
+      percentile: percentile ? Number(percentile) : undefined,
+      expectedRank: expectedRank || undefined,
+      testScope,
       difficulty,
       testType,
       notes,
@@ -133,6 +149,41 @@ export function EditTestModal({ test, onSave, onClose }) {
                 type="number"
                 value={rank}
                 onChange={(e) => setRank(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="lk-label">Total Students (optional)</label>
+              <input
+                className="lk-input"
+                type="number"
+                value={totalStudents}
+                onChange={(e) => setTotalStudents(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="lk-label">Test Scope / Milestone</label>
+              <select className="lk-input" value={testScope} onChange={(e) => setTestScope(e.target.value)}>
+                {testScopes.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="lk-label">Percentile (%ile)</label>
+              <input
+                className="lk-input"
+                placeholder="e.g. 99.45"
+                value={percentile}
+                onChange={(e) => setPercentile(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="lk-label">Expected Final JEE AIR</label>
+              <input
+                className="lk-input"
+                placeholder="e.g. AIR ~1450"
+                value={expectedRank}
+                onChange={(e) => setExpectedRank(e.target.value)}
               />
             </div>
           </div>

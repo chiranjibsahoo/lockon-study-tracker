@@ -24,7 +24,8 @@ import {
 } from './utils/googleSync';
 import { 
   levelInfo, plannedForDate, actualForDate, dailyRows, computeStreak, 
-  computePeriodRewards, subjectStats, categoryStats, testXP, subjectHistory, pct 
+  computePeriodRewards, subjectStats, categoryStats, testXP, subjectHistory, pct,
+  computeStudyAchievements
 } from './utils/analyticsHelpers';
 
 export default function App() {
@@ -116,6 +117,7 @@ export default function App() {
   const todayCompletion = todayPlanned > 0 ? Math.round((todayActual / todayPlanned) * 100) : 0;
 
   const periodRewards = useMemo(() => computePeriodRewards(timetable, studyLog), [timetable, studyLog]);
+  const studyAchievements = useMemo(() => computeStudyAchievements(timetable, studyLog), [timetable, studyLog]);
   const isPeriodGiven = (pr) => givenPeriodRewards.some((g) => g.cycleId === pr.cycleId && g.rewardName === (pr.tier && pr.tier.name));
   const totalRewardsGiven = givenPeriodRewards.length + redeemed.length;
 
@@ -302,6 +304,7 @@ export default function App() {
             timetable={timetable}
             studyLog={studyLog}
             periodRewards={periodRewards}
+            studyAchievements={studyAchievements}
             isPeriodGiven={isPeriodGiven}
             catalog={rewardCatalog}
             totalRewardsGiven={totalRewardsGiven}

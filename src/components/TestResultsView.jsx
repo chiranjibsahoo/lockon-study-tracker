@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { C, SUBJECTS, CATEGORY_COLORS, subjInfo } from '../data/subjects';
 import { fmtDate } from '../utils/timeHelpers';
-import { pct, subjectHistory } from '../utils/analyticsHelpers';
+import { pct, subjectHistory, computePercentile, computeProjectedAIR } from '../utils/analyticsHelpers';
 
 export function TestResultsView({
   testResults,
@@ -126,10 +126,15 @@ export function TestResultsView({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap justify-end">
                   {t.rank && (
                     <div className="lk-mono text-xs" style={{ color: C.textMute }}>
-                      Rank #{t.rank}/{t.totalStudents}
+                      #{t.rank}{t.totalStudents ? `/${t.totalStudents}` : ''}
+                    </div>
+                  )}
+                  {(t.percentile != null || (t.rank && t.totalStudents)) && (
+                    <div className="lk-chip" style={{ color: C.teal, background: C.tealSoft, borderColor: '#1E4A44', fontFamily: 'monospace' }}>
+                      {(t.percentile ?? computePercentile(t.rank, t.totalStudents, null))?.toFixed(1)}%ile
                     </div>
                   )}
                   <div className="lk-mono font-bold" style={{ fontSize: 18, color: C.amber, width: 58, textAlign: 'right' }}>
@@ -182,11 +187,43 @@ export function TestResultsView({
               </div>
 
               {isOpen && (
-                <div className="mt-3 pt-3 flex flex-wrap gap-2 items-center" style={{ borderTop: `1px solid ${C.border}` }}>
-                  <Chip>{t.difficulty}</Chip>
-                  <Chip>{t.testType}</Chip>
-                  <Chip>{t.marksObtained}/{t.maxMarks} marks</Chip>
-                  {t.notes && <div className="text-xs w-full mt-1" style={{ color: C.textMute }}>{t.notes}</div>}
+                <div className="mt-3 pt-3 flex flex-col gap-3" style={{ borderTop: `1px solid ${C.border}` }}>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <Chip>{t.difficulty}</Chip>
+                    <Chip>{t.testType}</Chip>
+                    {t.testScope && <Chip>{t.testScope}</Chip>}
+                    <Chip>{t.marksObtained}/{t.maxMarks} marks</Chip>
+                  </div>
+                  {/* Percentile & AIR row */}
+                  {(t.percentile != null || t.expectedRank || (t.rank && t.totalStudents)) && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {(t.percentile != null || (t.rank && t.totalStudents)) && (
+                        <div className="rounded-lg p-2.5" style={{ background: C.tealSoft, border: '1px solid #1E4A44' }}>
+                          <div className="lk-eyebrow" style={{ marginBottom: 2 }}>Percentile</div>
+                          <div className="lk-mono font-bold" style={{ color: C.teal, fontSize: 18 }}>
+                            {(t.percentile ?? computePercentile(t.rank, t.totalStudents, null))?.toFixed(2)}%ile
+                          </div>
+                        </div>
+                      )}
+                      {(t.expectedRank || (t.rank && t.totalStudents)) && (
+                        <div className="rounded-lg p-2.5" style={{ background: '#10B9811A', border: '1px solid #10B98144' }}>
+                          <div className="lk-eyebrow" style={{ marginBottom: 2 }}>Projected JEE AIR</div>
+                          <div className="lk-mono font-bold" style={{ color: C.positive, fontSize: 14 }}>
+                            {t.expectedRank || computeProjectedAIR(t.rank, t.totalStudents, null)}
+                          </div>
+                        </div>
+                      )}
+                      {t.rank && t.totalStudents && (
+                        <div className="rounded-lg p-2.5" style={{ background: C.amberSoft, border: '1px solid #4A3A20' }}>
+                          <div className="lk-eyebrow" style={{ marginBottom: 2 }}>Batch Rank</div>
+                          <div className="lk-mono font-bold" style={{ color: C.amber, fontSize: 16 }}>
+                            #{t.rank} / {t.totalStudents}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {t.notes && <div className="text-xs" style={{ color: C.textMute }}>{t.notes}</div>}
                 </div>
               )}
             </Panel>

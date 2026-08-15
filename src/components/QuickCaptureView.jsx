@@ -207,25 +207,41 @@ function TestForm({ onAdd }) {
   const [marksObtained, setMarksObtained] = useState('');
   const [rank, setRank] = useState('');
   const [totalStudents, setTotalStudents] = useState('');
+  const [percentile, setPercentile] = useState('');
+  const [expectedRank, setExpectedRank] = useState('');
+  const [testScope, setTestScope] = useState('Milestone Test');
   const [difficulty, setDifficulty] = useState('Moderate');
   const [testType, setTestType] = useState('JEE Main Pattern');
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState(TODAY_DATE);
 
   const subjectOptions = [...SUBJECTS.map((s) => s.key), 'Combined'];
-  const testTypes = [
+  const testScopes = [
+    'Milestone Test',
+    'Major Test',
+    'AITS (All India Test Series)',
+    'Weekly Test',
+    'Full Mock Test',
+    'Unit Test',
     'Chapter Test',
+    'Other',
+  ];
+  const testTypes = [
+    'JEE Main Pattern',
+    'JEE Advanced Pattern',
+    'CBSE Pattern',
     'Unit Test',
     'Monthly Test',
     'Half Yearly',
     'Final',
-    'JEE Main Pattern',
-    'JEE Advanced Pattern',
     'Mock Test',
     'Other',
   ];
 
   const percentage = maxMarks && marksObtained ? pct(Number(marksObtained), Number(maxMarks)) : null;
+  const computedPercentile = percentile || (rank && totalStudents ? (((Number(totalStudents) - Number(rank) + 1) / Number(totalStudents)) * 100).toFixed(2) : null);
+  const computedAIR = expectedRank || (rank && totalStudents ? `AIR ~${Math.max(1, Math.round(Number(rank) * (150000 / Number(totalStudents)))).toLocaleString()}` : null);
+
   const valid = testName && maxMarks && marksObtained && date;
 
   return (
@@ -259,10 +275,18 @@ function TestForm({ onAdd }) {
           </select>
         </div>
         <div>
+          <label className="lk-label">Test Scope / Milestone</label>
+          <select className="lk-input" value={testScope} onChange={(e) => setTestScope(e.target.value)}>
+            {testScopes.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label className="lk-label">Test Name</label>
           <input
             className="lk-input"
-            placeholder="e.g. PW Weekly Test 22"
+            placeholder="e.g. PW Milestone Test 04 / AITS 02"
             value={testName}
             onChange={(e) => setTestName(e.target.value)}
           />
@@ -271,7 +295,7 @@ function TestForm({ onAdd }) {
           <label className="lk-label">Chapter / Topic</label>
           <input
             className="lk-input"
-            placeholder="e.g. Magnetism & Matter"
+            placeholder="e.g. Magnetism & Matter / Full Syllabus"
             value={chapter}
             onChange={(e) => setChapter(e.target.value)}
           />
@@ -319,6 +343,28 @@ function TestForm({ onAdd }) {
           />
         </div>
         <div>
+          <label className="lk-label">
+            Percentile (%ile) <span style={{ color: C.textFaint, fontWeight: 400 }}>(auto / optional)</span>
+          </label>
+          <input
+            className="lk-input"
+            placeholder="e.g. 99.45"
+            value={percentile}
+            onChange={(e) => setPercentile(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="lk-label">
+            Expected Final JEE AIR <span style={{ color: C.textFaint, fontWeight: 400 }}>(auto / optional)</span>
+          </label>
+          <input
+            className="lk-input"
+            placeholder="e.g. AIR ~1450"
+            value={expectedRank}
+            onChange={(e) => setExpectedRank(e.target.value)}
+          />
+        </div>
+        <div>
           <label className="lk-label">Difficulty</label>
           <select className="lk-input" value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
             {['Easy', 'Moderate', 'Hard'].map((d) => (
@@ -345,10 +391,10 @@ function TestForm({ onAdd }) {
         </div>
       </div>
       <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
-        <div className="text-sm" style={{ color: C.textMute }}>
-          Score: <span className="lk-mono font-semibold" style={{ color: percentage !== null ? C.amber : C.textFaint }}>
-            {percentage !== null ? `${percentage}%` : '—'}
-          </span>
+        <div className="text-xs flex items-center gap-3" style={{ color: C.textMute }}>
+          <span>Score: <b style={{ color: percentage !== null ? C.amber : C.textFaint }}>{percentage !== null ? `${percentage}%` : '—'}</b></span>
+          {computedPercentile && <span>Percentile: <b style={{ color: C.teal }}>{computedPercentile}%ile</b></span>}
+          {computedAIR && <span>Projected: <b style={{ color: C.positive }}>{computedAIR}</b></span>}
         </div>
         <button
           className="lk-btn"
@@ -363,6 +409,9 @@ function TestForm({ onAdd }) {
               marksObtained: Number(marksObtained),
               rank: rank ? Number(rank) : undefined,
               totalStudents: totalStudents ? Number(totalStudents) : undefined,
+              percentile: percentile ? Number(percentile) : (computedPercentile ? Number(computedPercentile) : undefined),
+              expectedRank: expectedRank || computedAIR || undefined,
+              testScope,
               difficulty,
               testType,
               notes,
@@ -373,6 +422,8 @@ function TestForm({ onAdd }) {
             setMarksObtained('');
             setRank('');
             setTotalStudents('');
+            setPercentile('');
+            setExpectedRank('');
             setNotes('');
           }}
         >

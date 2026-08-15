@@ -1,7 +1,8 @@
 import React from 'react';
 import { 
   Clock, CheckCircle2, Target, Flame, TrendingUp, Calendar, ChevronRight, 
-  FileText, Sparkles, Trophy, ArrowUp, ArrowDown, Minus, Circle 
+  FileText, Sparkles, Trophy, ArrowUp, ArrowDown, Minus, Circle,
+  BarChart2, Zap, BookOpen
 } from 'lucide-react';
 import { C, subjInfo, CATEGORY_COLORS } from '../data/subjects';
 import { fmtRange, minToHM, TODAY_DATE, dowOf } from '../utils/timeHelpers';
@@ -27,22 +28,30 @@ export function DashboardView({
   timetable,
   studyLog,
   periodRewards,
+  studyAchievements,
   isPeriodGiven,
   catalog,
   totalRewardsGiven,
 }) {
   const insights = [];
   const phys = allSubjectStats.find((s) => s.subject === 'Physics');
-  if (phys) {
-    insights.push(`Physics performance is improving — up ${Math.round((phys.latest.pct - phys.history[0].pct) * 10) / 10} percentage points across the last ${phys.count} PW tests.`);
+  if (phys && phys.count >= 2) {
+    const delta = Math.round((phys.latest.pct - phys.history[0].pct) * 10) / 10;
+    insights.push(`Physics performance ${delta >= 0 ? 'improved' : 'dropped'} by ${Math.abs(delta)}% across ${phys.count} tests.`);
   }
-  insights.push('Study time increased by 6 hours and Physics test performance increased by 18 percentage points over 4 weeks.');
   const math = allSubjectStats.find((s) => s.subject === 'Mathematics');
   if (math && math.improvement !== 0) {
     insights.push(`Mathematics moved ${math.improvement > 0 ? 'up' : 'down'} ${Math.abs(math.improvement)}% on the latest test vs. the previous one.`);
   }
   if (bestRankTest) {
-    insights.push(`Best rank so far: #${bestRankTest.rank} of ${bestRankTest.totalStudents} in ${bestRankTest.subject} (${bestRankTest.testName}).`);
+    insights.push(`Best rank so far: #${bestRankTest.rank}${bestRankTest.totalStudents ? ` of ${bestRankTest.totalStudents}` : ''} in ${bestRankTest.subject} (${bestRankTest.testName}).`);
+  }
+  if (studyAchievements && studyAchievements.weekly.actual > 0) {
+    insights.push(`This week: ${studyAchievements.weekly.label} studied (${studyAchievements.weekly.pctVal}% of plan).`);
+  }
+  if (insights.length === 0) {
+    insights.push('No tests logged yet — add your first test result in Quick Capture!');
+    insights.push('Set up your weekly timetable to start tracking study hours and achievements.');
   }
 
   return (
@@ -88,6 +97,50 @@ export function DashboardView({
         />
         <StatCard label="Study Streak" value={`${streak} days`} icon={Flame} accent="#F0894A" />
       </div>
+
+      {/* Study Achievements — Weekly / Monthly / Quarterly */}
+      {studyAchievements && (
+        <Panel>
+          <SectionTitle
+            title="Study Achievements"
+            icon={BarChart2}
+            right={<button className="lk-btn-ghost" onClick={() => setTab('capture')}>Log Session <ChevronRight size={13} /></button>}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'This Week', data: studyAchievements.weekly, color: C.teal },
+              { label: 'This Month', data: studyAchievements.monthly, color: C.amber },
+              { label: 'Quarterly', data: studyAchievements.quarterly, color: '#A78BFA' },
+            ].map(({ label, data, color }) => (
+              <div key={label} className="rounded-lg p-3" style={{ background: C.bgAlt, border: `1px solid ${C.border}` }}>
+                <div className="lk-eyebrow mb-1">{label}</div>
+                <div className="flex items-baseline gap-1 mb-2">
+                  <span className="lk-mono font-bold" style={{ fontSize: 20, color }}>{(data.actual / 60).toFixed(1)}</span>
+                  <span className="text-xs" style={{ color: C.textFaint }}>hrs studied</span>
+                  {data.planned > 0 && (
+                    <span className="text-xs ml-auto" style={{ color: C.textFaint }}>/ {(data.planned / 60).toFixed(1)}h planned</span>
+                  )}
+                </div>
+                <ProgressBar value={data.pctVal} color={color} height={6} />
+                <div className="flex justify-between mt-1.5">
+                  <span className="lk-mono text-xs" style={{ color: data.pctVal >= 90 ? C.positive : data.pctVal >= 70 ? C.amber : C.negative }}>
+                    {data.pctVal}% of plan
+                  </span>
+                  {data.pctVal >= 90 && <span className="text-xs" style={{ color: C.positive }}>🏆 Target Hit!</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+          {studyAchievements.maxDay.min > 0 && (
+            <div className="mt-3 flex items-center gap-2 text-xs rounded-lg p-2.5" style={{ background: '#1A2A1A', border: `1px solid #1E4A38` }}>
+              <Zap size={13} style={{ color: C.positive, flexShrink: 0 }} />
+              <span style={{ color: C.textMute }}>
+                Best single day: <b style={{ color: C.positive }}>{studyAchievements.maxDay.label}</b>
+              </span>
+            </div>
+          )}
+        </Panel>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         <Panel className="lg:col-span-2">
