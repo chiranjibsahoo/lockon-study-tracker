@@ -33,7 +33,7 @@ export function loadStoredData() {
 
     const xpSpent = localStorage.getItem(KEYS.XP_SPENT)
       ? JSON.parse(localStorage.getItem(KEYS.XP_SPENT))
-      : 2000;
+      : 0;
 
     const redeemed = localStorage.getItem(KEYS.REDEEMED)
       ? JSON.parse(localStorage.getItem(KEYS.REDEEMED))
@@ -72,7 +72,7 @@ export function loadStoredData() {
       timetable: timetableSeed,
       studyLog: genInitialStudyLog(timetableSeed),
       xpEvents: xpEventsSeed,
-      xpSpent: 2000,
+      xpSpent: 0,
       redeemed: [],
       rewardCatalog: rewardCatalogSeed,
       givenPeriodRewards: [],

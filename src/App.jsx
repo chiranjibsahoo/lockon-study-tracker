@@ -104,7 +104,7 @@ export default function App() {
     }
   }
 
-  const baseXP = profileSettings.baseXP || 7895;
+  const baseXP = profileSettings.baseXP ?? 0;
   const totalEarned = baseXP + xpEvents.reduce((a, e) => a + e.xp, 0);
   const lvl = levelInfo(totalEarned);
   const availableXP = totalEarned - xpSpent;
