@@ -10,6 +10,7 @@ const KEYS = {
   CATALOG: 'lockon_catalog_v1',
   GIVEN_PERIOD_REWARDS: 'lockon_given_rewards_v1',
   PROFILE_SETTINGS: 'lockon_profile_settings_v1',
+  GOOGLE_SHEET_URL: 'lockon_google_sheet_url_v1',
 };
 
 export function loadStoredData() {
@@ -50,6 +51,8 @@ export function loadStoredData() {
       ? JSON.parse(localStorage.getItem(KEYS.PROFILE_SETTINGS))
       : profileSettingsSeed;
 
+    const googleSheetUrl = localStorage.getItem(KEYS.GOOGLE_SHEET_URL) || '';
+
     return {
       testResults,
       timetable,
@@ -60,6 +63,7 @@ export function loadStoredData() {
       rewardCatalog,
       givenPeriodRewards,
       profileSettings,
+      googleSheetUrl,
     };
   } catch (err) {
     console.error('Failed to load stored data, falling back to defaults:', err);
@@ -88,6 +92,7 @@ export function saveStoredData(data) {
     if (data.rewardCatalog) localStorage.setItem(KEYS.CATALOG, JSON.stringify(data.rewardCatalog));
     if (data.givenPeriodRewards) localStorage.setItem(KEYS.GIVEN_PERIOD_REWARDS, JSON.stringify(data.givenPeriodRewards));
     if (data.profileSettings) localStorage.setItem(KEYS.PROFILE_SETTINGS, JSON.stringify(data.profileSettings));
+    if (data.googleSheetUrl !== undefined) localStorage.setItem(KEYS.GOOGLE_SHEET_URL, data.googleSheetUrl);
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }

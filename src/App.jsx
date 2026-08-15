@@ -20,6 +20,9 @@ import {
   loadStoredData, saveStoredData, exportBackupJSON, clearLocalStorage 
 } from './utils/storage';
 import { 
+  fetchFromGoogleSheet, saveToGoogleSheet 
+} from './utils/googleSync';
+import { 
   levelInfo, plannedForDate, actualForDate, dailyRows, computeStreak, 
   computePeriodRewards, subjectStats, categoryStats, testXP, subjectHistory, pct 
 } from './utils/analyticsHelpers';
@@ -37,6 +40,8 @@ export default function App() {
   const [rewardCatalog, setRewardCatalog] = useState(storedData.rewardCatalog);
   const [givenPeriodRewards, setGivenPeriodRewards] = useState(storedData.givenPeriodRewards);
   const [profileSettings, setProfileSettings] = useState(storedData.profileSettings);
+  const [googleSheetUrl, setGoogleSheetUrl] = useState(storedData.googleSheetUrl || '');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const [captureSubTab, setCaptureSubTab] = useState('study');
   const [testFilter, setTestFilter] = useState({ category: 'All', subject: 'All' });
@@ -48,9 +53,16 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [editingTest, setEditingTest] = useState(null);
 
-  // Sync to LocalStorage on every state update
+  // Initial cloud fetch if Google Sheet URL exists
   useEffect(() => {
-    saveStoredData({
+    if (googleSheetUrl) {
+      handleSyncGoogleSheets(googleSheetUrl, true);
+    }
+  }, []);
+
+  // Sync to LocalStorage + Cloud on every state update
+  useEffect(() => {
+    const currentState = {
       testResults,
       timetable,
       studyLog,
@@ -60,8 +72,37 @@ export default function App() {
       rewardCatalog,
       givenPeriodRewards,
       profileSettings,
-    });
-  }, [testResults, timetable, studyLog, xpEvents, xpSpent, redeemed, rewardCatalog, givenPeriodRewards, profileSettings]);
+      googleSheetUrl,
+    };
+
+    saveStoredData(currentState);
+
+    if (googleSheetUrl) {
+      saveToGoogleSheet(googleSheetUrl, currentState);
+    }
+  }, [testResults, timetable, studyLog, xpEvents, xpSpent, redeemed, rewardCatalog, givenPeriodRewards, profileSettings, googleSheetUrl]);
+
+  async function handleSyncGoogleSheets(urlToSync, silent = false) {
+    const targetUrl = urlToSync || googleSheetUrl;
+    if (!targetUrl) return;
+    setIsSyncing(true);
+    const remoteData = await fetchFromGoogleSheet(targetUrl);
+    setIsSyncing(false);
+    if (remoteData) {
+      if (remoteData.testResults) setTestResults(remoteData.testResults);
+      if (remoteData.timetable) setTimetable(remoteData.timetable);
+      if (remoteData.studyLog) setStudyLog(remoteData.studyLog);
+      if (remoteData.xpEvents) setXpEvents(remoteData.xpEvents);
+      if (remoteData.xpSpent !== undefined) setXpSpent(remoteData.xpSpent);
+      if (remoteData.redeemed) setRedeemed(remoteData.redeemed);
+      if (remoteData.rewardCatalog) setRewardCatalog(remoteData.rewardCatalog);
+      if (remoteData.givenPeriodRewards) setGivenPeriodRewards(remoteData.givenPeriodRewards);
+      if (remoteData.profileSettings) setProfileSettings(remoteData.profileSettings);
+      if (!silent) alert('Successfully synced latest data from Google Sheets!');
+    } else if (!silent) {
+      alert('Could not fetch data from Google Sheet. Please check the Web App URL and permissions.');
+    }
+  }
 
   const baseXP = profileSettings.baseXP || 7895;
   const totalEarned = baseXP + xpEvents.reduce((a, e) => a + e.xp, 0);
@@ -235,6 +276,7 @@ export default function App() {
       <Header
         profileSettings={profileSettings}
         streak={streak}
+        googleSheetUrl={googleSheetUrl}
         onOpenSettings={() => setShowSettings(true)}
       />
 
@@ -359,10 +401,14 @@ export default function App() {
       {showSettings && (
         <SettingsModal
           profileSettings={profileSettings}
+          googleSheetUrl={googleSheetUrl}
           onSaveProfile={handleSaveProfile}
+          onSaveSheetUrl={(url) => setGoogleSheetUrl(url)}
           onExport={handleExport}
           onImport={handleImport}
           onResetDefaults={handleResetDefaults}
+          onSyncGoogleSheets={(url) => handleSyncGoogleSheets(url, false)}
+          isSyncing={isSyncing}
           onClose={() => setShowSettings(false)}
         />
       )}

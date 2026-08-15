@@ -1,8 +1,8 @@
 import React from 'react';
-import { Target, Flame, Settings } from 'lucide-react';
+import { Target, Flame, Settings, Cloud } from 'lucide-react';
 import { C } from '../data/subjects';
 
-export function Header({ profileSettings, streak, onOpenSettings }) {
+export function Header({ profileSettings, streak, googleSheetUrl, onOpenSettings }) {
   return (
     <div style={{ borderBottom: `1px solid ${C.border}`, background: C.bgAlt }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 min-w-0">
@@ -33,6 +33,16 @@ export function Header({ profileSettings, streak, onOpenSettings }) {
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          {googleSheetUrl ? (
+            <span
+              className="lk-chip cursor-pointer"
+              style={{ color: '#10B981', background: '#10B9811A', borderColor: '#10B98144' }}
+              onClick={onOpenSettings}
+              title="Synced with Google Sheet"
+            >
+              <Cloud size={11} className="mr-1 inline" /> Sheet Connected
+            </span>
+          ) : null}
           <span className="lk-chip hidden md:inline-flex" style={{ color: C.teal, background: C.tealSoft, borderColor: '#1E4A44' }}>
             CBSE {profileSettings.cbseTargetPct}%+
           </span>
