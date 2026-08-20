@@ -1,4 +1,4 @@
-import { testResultsSeed, timetableSeed, genInitialStudyLog, rewardCatalogSeed, xpEventsSeed, profileSettingsSeed } from '../data/initialData';
+import { testResultsSeed, timetableSeed, genInitialStudyLog, rewardCatalogSeed, xpEventsSeed, profileSettingsSeed, DEFAULT_GOOGLE_SHEET_URL } from '../data/initialData';
 
 const KEYS = {
   TEST_RESULTS: 'lockon_test_results_v1',
@@ -51,7 +51,7 @@ export function loadStoredData() {
       ? JSON.parse(localStorage.getItem(KEYS.PROFILE_SETTINGS))
       : profileSettingsSeed;
 
-    let googleSheetUrl = localStorage.getItem(KEYS.GOOGLE_SHEET_URL) || '';
+    let googleSheetUrl = localStorage.getItem(KEYS.GOOGLE_SHEET_URL) || DEFAULT_GOOGLE_SHEET_URL || '';
 
     // Check URL parameters for syncUrl or sheetUrl
     if (typeof window !== 'undefined' && window.location) {

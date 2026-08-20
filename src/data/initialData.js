@@ -37,3 +37,7 @@ export const profileSettingsSeed = {
   baseXP: 0,
 };
 
+// Set your Google Apps Script Web App URL here to enable zero-config auto-sync on all devices!
+export const DEFAULT_GOOGLE_SHEET_URL = '';
+
+
