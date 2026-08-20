@@ -38,9 +38,9 @@ export function Header({ profileSettings, streak, googleSheetUrl, onOpenSettings
               className="lk-chip cursor-pointer"
               style={{ color: '#10B981', background: '#10B9811A', borderColor: '#10B98144' }}
               onClick={onOpenSettings}
-              title="Synced with Google Sheet"
+              title="Real-time Auto-Syncing with Google Sheet (Every 10s & on Focus)"
             >
-              <Cloud size={11} className="mr-1 inline" /> Sheet Connected
+              <Cloud size={11} className="mr-1 inline text-emerald-400" /> Live Auto-Sync
             </span>
           ) : null}
           <span className="lk-chip hidden md:inline-flex" style={{ color: C.teal, background: C.tealSoft, borderColor: '#1E4A44' }}>

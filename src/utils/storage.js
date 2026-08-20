@@ -51,7 +51,19 @@ export function loadStoredData() {
       ? JSON.parse(localStorage.getItem(KEYS.PROFILE_SETTINGS))
       : profileSettingsSeed;
 
-    const googleSheetUrl = localStorage.getItem(KEYS.GOOGLE_SHEET_URL) || '';
+    let googleSheetUrl = localStorage.getItem(KEYS.GOOGLE_SHEET_URL) || '';
+
+    // Check URL parameters for syncUrl or sheetUrl
+    if (typeof window !== 'undefined' && window.location) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramUrl = urlParams.get('syncUrl') || urlParams.get('sheetUrl');
+      if (paramUrl && paramUrl.trim()) {
+        googleSheetUrl = paramUrl.trim();
+        try {
+          localStorage.setItem(KEYS.GOOGLE_SHEET_URL, googleSheetUrl);
+        } catch (e) {}
+      }
+    }
 
     return {
       testResults,

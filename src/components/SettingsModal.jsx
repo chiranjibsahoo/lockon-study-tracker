@@ -152,7 +152,7 @@ export function SettingsModal({
                 value={sheetUrl}
                 onChange={(e) => setSheetUrl(e.target.value)}
               />
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <button
                   type="button"
                   className="lk-btn-ghost text-xs py-1.5 flex-1"
@@ -161,6 +161,20 @@ export function SettingsModal({
                 >
                   {isSyncing ? 'Syncing with Google Sheet...' : '🔄 Pull & Sync Latest Sheet Data'}
                 </button>
+                {sheetUrl && (
+                  <button
+                    type="button"
+                    className="lk-btn text-xs py-1.5"
+                    style={{ background: '#10B981', color: '#000', fontWeight: 600 }}
+                    onClick={() => {
+                      const mobileLink = `${window.location.origin}${window.location.pathname}?syncUrl=${encodeURIComponent(sheetUrl.trim())}`;
+                      navigator.clipboard.writeText(mobileLink);
+                      alert('📱 Mobile Pairing Link copied to clipboard!\n\nSend this link to your phone via WhatsApp/Telegram and open it ONCE. Your phone will auto-sync automatically!');
+                    }}
+                  >
+                    📱 Copy Mobile Link
+                  </button>
+                )}
               </div>
             </div>
 

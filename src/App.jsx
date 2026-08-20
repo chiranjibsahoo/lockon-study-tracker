@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Flame, CheckCircle2, TrendingUp, Trophy, Award, ShieldCheck, Sparkles, Target 
 } from 'lucide-react';
@@ -54,14 +54,54 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [editingTest, setEditingTest] = useState(null);
 
-  // Initial cloud fetch if Google Sheet URL exists
+  const isRemoteSyncRef = useRef(false);
+  const lastRemoteJsonRef = useRef('');
+
+  // 1. Initial Cloud Sync on Mount + Parse URL query param if present
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const paramUrl = params.get('syncUrl') || params.get('sheetUrl');
+      if (paramUrl && paramUrl.trim() && paramUrl.trim() !== googleSheetUrl) {
+        setGoogleSheetUrl(paramUrl.trim());
+        handleSyncGoogleSheets(paramUrl.trim(), true);
+        return;
+      }
+    }
     if (googleSheetUrl) {
       handleSyncGoogleSheets(googleSheetUrl, true);
     }
   }, []);
 
-  // Sync to LocalStorage + Cloud on every state update
+  // 2. Realtime Auto-Polling (every 10s) & Tab-Focus Sync
+  useEffect(() => {
+    if (!googleSheetUrl) return;
+
+    const pollSync = () => {
+      handleSyncGoogleSheets(googleSheetUrl, true);
+    };
+
+    // Auto-poll every 10 seconds
+    const interval = setInterval(pollSync, 10000);
+
+    // Sync immediately when user switches back to this tab / unlocks phone
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible') {
+        pollSync();
+      }
+    };
+
+    window.addEventListener('focus', handleFocusOrVisible);
+    document.addEventListener('visibilitychange', handleFocusOrVisible);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocusOrVisible);
+      document.removeEventListener('visibilitychange', handleFocusOrVisible);
+    };
+  }, [googleSheetUrl]);
+
+  // 3. Save to LocalStorage + Cloud on state changes
   useEffect(() => {
     const currentState = {
       testResults,
@@ -76,8 +116,16 @@ export default function App() {
       googleSheetUrl,
     };
 
+    // Always update local storage
     saveStoredData(currentState);
 
+    // If change was brought by a remote pull, skip posting back to cloud to avoid unnecessary network traffic
+    if (isRemoteSyncRef.current) {
+      isRemoteSyncRef.current = false;
+      return;
+    }
+
+    // User made a local edit -> push immediately to Google Sheet
     if (googleSheetUrl) {
       saveToGoogleSheet(googleSheetUrl, currentState);
     }
@@ -86,10 +134,18 @@ export default function App() {
   async function handleSyncGoogleSheets(urlToSync, silent = false) {
     const targetUrl = urlToSync || googleSheetUrl;
     if (!targetUrl) return;
-    setIsSyncing(true);
+    if (!silent) setIsSyncing(true);
+    
     const remoteData = await fetchFromGoogleSheet(targetUrl);
-    setIsSyncing(false);
+    if (!silent) setIsSyncing(false);
+
     if (remoteData) {
+      const jsonStr = JSON.stringify(remoteData);
+      // Skip state update if remote data hasn't changed
+      if (jsonStr === lastRemoteJsonRef.current) return;
+      lastRemoteJsonRef.current = jsonStr;
+
+      isRemoteSyncRef.current = true;
       if (remoteData.testResults) setTestResults(remoteData.testResults);
       if (remoteData.timetable) setTimetable(remoteData.timetable);
       if (remoteData.studyLog) setStudyLog(remoteData.studyLog);
@@ -99,6 +155,9 @@ export default function App() {
       if (remoteData.rewardCatalog) setRewardCatalog(remoteData.rewardCatalog);
       if (remoteData.givenPeriodRewards) setGivenPeriodRewards(remoteData.givenPeriodRewards);
       if (remoteData.profileSettings) setProfileSettings(remoteData.profileSettings);
+      if (remoteData.googleSheetUrl && remoteData.googleSheetUrl !== googleSheetUrl) {
+        setGoogleSheetUrl(remoteData.googleSheetUrl);
+      }
       if (!silent) alert('Successfully synced latest data from Google Sheets!');
     } else if (!silent) {
       alert('Could not fetch data from Google Sheet. Please check the Web App URL and permissions.');

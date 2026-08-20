@@ -3,14 +3,22 @@
 export async function fetchFromGoogleSheet(webAppUrl) {
   if (!webAppUrl || !webAppUrl.trim()) return null;
   try {
-    const response = await fetch(`${webAppUrl.trim()}?action=getData`, {
+    const cleanUrl = webAppUrl.trim();
+    const fetchUrl = cleanUrl.includes('?') ? `${cleanUrl}&action=getData&t=${Date.now()}` : `${cleanUrl}?action=getData&t=${Date.now()}`;
+    const response = await fetch(fetchUrl, {
       method: 'GET',
       redirect: 'follow',
+      headers: {
+        'Accept': 'application/json',
+      },
     });
     if (!response.ok) throw new Error(`HTTP error ${response.status}`);
     const result = await response.json();
-    if (result && result.status === 'success' && result.data) {
-      return result.data;
+    if (result) {
+      if (result.data !== undefined && result.data !== null) return result.data;
+      if (result.status === 'success' && result.data) return result.data;
+      if (result.ok && result.data) return result.data;
+      if (result.testResults || result.studyLog || result.timetable) return result;
     }
     return null;
   } catch (err) {
@@ -22,11 +30,12 @@ export async function fetchFromGoogleSheet(webAppUrl) {
 export async function saveToGoogleSheet(webAppUrl, allData) {
   if (!webAppUrl || !webAppUrl.trim()) return false;
   try {
-    const response = await fetch(webAppUrl.trim(), {
+    const cleanUrl = webAppUrl.trim();
+    await fetch(cleanUrl, {
       method: 'POST',
-      mode: 'no-cors', // Apps Script web apps often require no-cors or redirect handling
+      mode: 'no-cors', // Google Apps Script web apps require no-cors in browser
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain', // text/plain avoids CORS preflight OPTIONS request blocking
       },
       body: JSON.stringify({
         action: 'saveData',
@@ -67,7 +76,7 @@ function doPost(e) {
       }
       sheet.getRange("A1").setValue(JSON.stringify(contents.data));
       
-      // Also format human readable sheets for easy viewing
+      // Format human readable sheets for easy viewing
       exportHumanReadableData(contents.data);
       
       return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
@@ -96,9 +105,9 @@ function exportHumanReadableData(d) {
   if (d.testResults && d.testResults.length) {
     var trSheet = ss.getSheetByName("Test Results") || ss.insertSheet("Test Results");
     trSheet.clear();
-    trSheet.appendRow(["ID", "Date", "Category", "Subject", "Test Name", "Marks Obtained", "Max Marks", "Rank", "Difficulty"]);
+    trSheet.appendRow(["ID", "Date", "Category", "Subject", "Test Name", "Marks Obtained", "Max Marks", "Rank", "Percentile", "Projected AIR", "Difficulty"]);
     d.testResults.forEach(function(row) {
-      trSheet.appendRow([row.id, row.date, row.category, row.subject, row.testName, row.marksObtained, row.maxMarks, row.rank || "-", row.difficulty]);
+      trSheet.appendRow([row.id, row.date, row.category, row.subject, row.testName, row.marksObtained, row.maxMarks, row.rank || "-", row.percentile || "-", row.expectedRank || "-", row.difficulty]);
     });
   }
 }
