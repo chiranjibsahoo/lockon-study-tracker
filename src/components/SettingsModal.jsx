@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, Download, Upload, RotateCcw, Shield, X, Save, Cloud, HelpCircle, Copy, Check } from 'lucide-react';
 import { C } from '../data/subjects';
-import { APPS_SCRIPT_TEMPLATE } from '../utils/googleSync';
+import { APPS_SCRIPT_TEMPLATE, getUrlValidationError, isValidWebAppUrl } from '../utils/googleSync';
 
 export function SettingsModal({
   profileSettings,
@@ -151,12 +151,22 @@ export function SettingsModal({
                 placeholder="Paste Google Apps Script Web App URL (https://script.google.com/macros/s/.../exec)"
                 value={sheetUrl}
                 onChange={(e) => setSheetUrl(e.target.value)}
+                style={{
+                  borderColor: getUrlValidationError(sheetUrl) ? '#E2604F' : undefined,
+                }}
               />
+
+              {getUrlValidationError(sheetUrl) && (
+                <div className="text-[11px] p-2 rounded bg-red-950/60 border border-red-800/60 text-red-300">
+                  {getUrlValidationError(sheetUrl)}
+                </div>
+              )}
+
               <div className="flex gap-2 flex-wrap">
                 <button
                   type="button"
                   className="lk-btn-ghost text-xs py-1.5 flex-1"
-                  disabled={!sheetUrl || isSyncing}
+                  disabled={!sheetUrl || !isValidWebAppUrl(sheetUrl) || isSyncing}
                   onClick={() => onSyncGoogleSheets(sheetUrl)}
                 >
                   {isSyncing ? 'Syncing with Google Sheet...' : '🔄 Pull & Sync Latest Sheet Data'}

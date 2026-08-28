@@ -1,7 +1,28 @@
 // Helper for Google Sheets Web App Synchronization
 
+export function isValidWebAppUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  const clean = url.trim();
+  return clean.includes('script.google.com') && clean.includes('/exec');
+}
+
+export function getUrlValidationError(url) {
+  if (!url || !url.trim()) return null;
+  const clean = url.trim();
+  if (clean.includes('docs.google.com/spreadsheets')) {
+    return '⚠️ You pasted the Google Sheet link! Please deploy Apps Script as Web App and paste the /exec URL.';
+  }
+  if (clean.includes('script.google.com/home/projects') || clean.includes('script.google.com/edit')) {
+    return '⚠️ You pasted the Script Editor link! Click Deploy > New Deployment and copy the Web App URL ending in /exec.';
+  }
+  if (!clean.includes('/exec') || !clean.includes('script.google.com')) {
+    return '⚠️ Invalid Web App URL format. Must look like: https://script.google.com/macros/s/.../exec';
+  }
+  return null;
+}
+
 export async function fetchFromGoogleSheet(webAppUrl) {
-  if (!webAppUrl || !webAppUrl.trim()) return null;
+  if (!webAppUrl || !webAppUrl.trim() || !isValidWebAppUrl(webAppUrl)) return null;
   try {
     const cleanUrl = webAppUrl.trim();
     const fetchUrl = cleanUrl.includes('?') ? `${cleanUrl}&action=getData&t=${Date.now()}` : `${cleanUrl}?action=getData&t=${Date.now()}`;
@@ -28,7 +49,7 @@ export async function fetchFromGoogleSheet(webAppUrl) {
 }
 
 export async function saveToGoogleSheet(webAppUrl, allData) {
-  if (!webAppUrl || !webAppUrl.trim()) return false;
+  if (!webAppUrl || !webAppUrl.trim() || !isValidWebAppUrl(webAppUrl)) return false;
   try {
     const cleanUrl = webAppUrl.trim();
     await fetch(cleanUrl, {
