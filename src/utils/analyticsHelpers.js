@@ -170,19 +170,16 @@ export function computeStudyAchievements(timetable, studyLog) {
   const totalActualMin = studyLog.reduce((a, e) => a + e.duration, 0);
   const monthlyActualMin = studyLog.filter((e) => e.date.startsWith(currentYearMonth)).reduce((a, e) => a + e.duration, 0);
 
-  const plannedPerDay = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    .reduce((a, dow) => a + (timetable[dow] || []).reduce((s, slot) => s + (slot.end - slot.start), 0), 0);
+  // Filter study log by current week (Mon-Sun)
+  const weeklyActualMin = studyLog
+    .filter((e) => CURRENT_WEEK_DATES.includes(e.date))
+    .reduce((a, e) => a + e.duration, 0);
 
-  const weeklyPlannedMin = plannedPerDay;
-  const weeklyActualMin = studyLog.filter((e) => {
-    const d = new Date(e.date);
-    const now = new Date(TODAY_DATE);
-    const diffDays = Math.abs((now - d) / (1000 * 60 * 60 * 24));
-    return diffDays <= 7;
-  }).reduce((a, e) => a + e.duration, 0);
+  // Weekly planned minutes = sum of planned slots for current week dates
+  const weeklyPlannedMin = CURRENT_WEEK_DATES.reduce((sum, dStr) => sum + plannedForDate(timetable, dStr), 0);
 
-  const monthlyPlannedMin = weeklyPlannedMin * 4;
-  const quarterlyPlannedMin = weeklyPlannedMin * 12;
+  const monthlyPlannedMin = weeklyPlannedMin > 0 ? weeklyPlannedMin * 4 : 0;
+  const quarterlyPlannedMin = weeklyPlannedMin > 0 ? weeklyPlannedMin * 12 : 0;
 
   const weeklyPct = weeklyPlannedMin > 0 ? Math.round((weeklyActualMin / weeklyPlannedMin) * 100) : (weeklyActualMin > 0 ? 100 : 0);
   const monthlyPct = monthlyPlannedMin > 0 ? Math.round((monthlyActualMin / monthlyPlannedMin) * 100) : (monthlyActualMin > 0 ? 100 : 0);

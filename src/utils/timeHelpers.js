@@ -33,7 +33,15 @@ export const dowOf = (dateStr) => {
   return DOW_NAMES[new Date(dateStr + 'T00:00:00').getDay()];
 };
 
-export const TODAY_DATE = '2026-08-08'; // baseline default date matching seed timeline
+export const getTodayISO = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const TODAY_DATE = getTodayISO();
 
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -47,12 +55,4 @@ export const fmtDate = (iso) => {
   }
   const d = new Date(iso + 'T00:00:00');
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
-};
-
-export const getTodayISO = () => {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 };
