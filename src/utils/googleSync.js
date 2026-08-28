@@ -72,9 +72,10 @@ export async function saveToGoogleSheet(webAppUrl, allData) {
 
 export const APPS_SCRIPT_TEMPLATE = `
 function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("LOCKON_DB");
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("LOCKON_DB");
   if (!sheet) {
-    sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet("LOCKON_DB");
+    sheet = ss.insertSheet("LOCKON_DB");
   }
   var cellValue = sheet.getRange("A1").getValue();
   var data = {};
@@ -83,6 +84,69 @@ function doGet(e) {
       data = JSON.parse(cellValue);
     } catch (err) {}
   }
+
+  // Fallback: Automatically parse existing rows from "Test Results" and "Study Logs" tabs if LOCKON_DB cell A1 is empty
+  if (!data.testResults || !data.testResults.length) {
+    var trSheet = ss.getSheetByName("Test Results");
+    if (trSheet) {
+      var trValues = trSheet.getDataRange().getValues();
+      if (trValues.length > 1) {
+        data.testResults = [];
+        for (var i = 1; i < trValues.length; i++) {
+          var row = trValues[i];
+          if (row[0] || row[4]) {
+            var dateStr = row[1];
+            if (dateStr instanceof Date) {
+              dateStr = Utilities.formatDate(dateStr, ss.getSpreadsheetTimeZone() || "GMT", "yyyy-MM-dd");
+            } else if (dateStr) {
+              dateStr = String(dateStr).slice(0, 10);
+            }
+            data.testResults.push({
+              id: String(row[0] || ('t' + i)),
+              date: dateStr || '',
+              category: String(row[2] || 'PW Test'),
+              subject: String(row[3] || 'Physics'),
+              testName: String(row[4] || ''),
+              marksObtained: Number(row[5]) || 0,
+              maxMarks: Number(row[6]) || 100,
+              rank: (row[7] !== '' && row[7] !== null && row[7] !== '-') ? Number(row[7]) : undefined,
+              difficulty: String(row[8] || 'Moderate')
+            });
+          }
+        }
+      }
+    }
+  }
+
+  if (!data.studyLog || !data.studyLog.length) {
+    var slSheet = ss.getSheetByName("Study Logs");
+    if (slSheet) {
+      var slValues = slSheet.getDataRange().getValues();
+      if (slValues.length > 1) {
+        data.studyLog = [];
+        for (var j = 1; j < slValues.length; j++) {
+          var sRow = slValues[j];
+          if (sRow[0] || sRow[2]) {
+            var sDateStr = sRow[1];
+            if (sDateStr instanceof Date) {
+              sDateStr = Utilities.formatDate(sDateStr, ss.getSpreadsheetTimeZone() || "GMT", "yyyy-MM-dd");
+            } else if (sDateStr) {
+              sDateStr = String(sDateStr).slice(0, 10);
+            }
+            data.studyLog.push({
+              id: String(sRow[0] || ('s' + j)),
+              date: sDateStr || '',
+              subject: String(sRow[2] || 'Physics'),
+              duration: Number(sRow[3]) || 0,
+              topic: String(sRow[4] || ''),
+              studyType: String(sRow[5] || 'Concept Learning')
+            });
+          }
+        }
+      }
+    }
+  }
+
   return ContentService.createTextOutput(JSON.stringify({ status: "success", data: data }))
     .setMimeType(ContentService.MimeType.JSON);
 }
@@ -91,10 +155,8 @@ function doPost(e) {
   try {
     var contents = JSON.parse(e.postData.contents);
     if (contents.action === "saveData" && contents.data) {
-      var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("LOCKON_DB");
-      if (!sheet) {
-        sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet("LOCKON_DB");
-      }
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sheet = ss.getSheetByName("LOCKON_DB") || ss.insertSheet("LOCKON_DB");
       sheet.getRange("A1").setValue(JSON.stringify(contents.data));
       
       // Format human readable sheets for easy viewing
