@@ -258,3 +258,99 @@ export function computePeriodRewards(timetable, studyLog) {
     build('Quarterly', 'quarter-current', 'Quarterly Target', achievements.quarterly),
   ];
 }
+
+export function computeMonthlyGrowth(studyLog) {
+  const today = new Date(TODAY_DATE);
+  const curY = today.getFullYear();
+  const curM = today.getMonth(); // 0-indexed
+
+  const curMonthStr = `${curY}-${String(curM + 1).padStart(2, '0')}`;
+  
+  const prevDate = new Date(curY, curM - 1, 1);
+  const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+
+  const curMin = studyLog.filter((e) => e.date.startsWith(curMonthStr)).reduce((a, e) => a + e.duration, 0);
+  const prevMin = studyLog.filter((e) => e.date.startsWith(prevMonthStr)).reduce((a, e) => a + e.duration, 0);
+
+  const growthPct = prevMin > 0 ? Math.round(((curMin - prevMin) / prevMin) * 1000) / 10 : (curMin > 0 ? 100 : 0);
+  const daysInCurMonth = new Date(curY, curM + 1, 0).getDate();
+  const dailyAvgHours = daysInCurMonth > 0 ? Math.round((curMin / 60 / daysInCurMonth) * 10) / 10 : 0;
+
+  // Subject distribution for current month
+  const curMonthLogs = studyLog.filter((e) => e.date.startsWith(curMonthStr));
+  const subjMap = {};
+  curMonthLogs.forEach((e) => {
+    subjMap[e.subject] = (subjMap[e.subject] || 0) + e.duration;
+  });
+
+  const subjDistribution = Object.entries(subjMap).map(([subject, min]) => ({
+    subject,
+    min,
+    hrs: Math.round((min / 60) * 10) / 10,
+    pctVal: curMin > 0 ? Math.round((min / curMin) * 100) : 0,
+  })).sort((a, b) => b.min - a.min);
+
+  return {
+    curHours: Math.round((curMin / 60) * 10) / 10,
+    prevHours: Math.round((prevMin / 60) * 10) / 10,
+    growthPct,
+    dailyAvgHours,
+    subjDistribution,
+    monthName: today.toLocaleString('default', { month: 'long', year: 'numeric' }),
+  };
+}
+
+export function computeTestSnapSummary(testResults) {
+  if (!testResults || !testResults.length) {
+    return {
+      totalTests: 0,
+      avgPct: 0,
+      bestPct: 0,
+      bestRank: null,
+      subjAverages: [],
+      recentTests: [],
+    };
+  }
+
+  const totalTests = testResults.length;
+  const pcts = testResults.map((t) => pct(t.marksObtained, t.maxMarks));
+  const avgPct = Math.round((pcts.reduce((a, b) => a + b, 0) / totalTests) * 10) / 10;
+  const bestPct = Math.max(...pcts);
+
+  const ranked = testResults.filter((t) => t.rank);
+  const bestRankObj = ranked.length ? ranked.reduce((best, t) => (t.rank < best.rank ? t : best)) : null;
+
+  // Subject-wise performance summary
+  const subMap = {};
+  testResults.forEach((t) => {
+    const p = pct(t.marksObtained, t.maxMarks);
+    if (!subMap[t.subject]) subMap[t.subject] = { total: 0, count: 0, highest: 0 };
+    subMap[t.subject].total += p;
+    subMap[t.subject].count += 1;
+    if (p > subMap[t.subject].highest) subMap[t.subject].highest = p;
+  });
+
+  const subjAverages = Object.entries(subMap).map(([subject, data]) => ({
+    subject,
+    avg: Math.round((data.total / data.count) * 10) / 10,
+    count: data.count,
+    highest: data.highest,
+  })).sort((a, b) => b.avg - a.avg);
+
+  const recentTests = [...testResults]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5)
+    .map((t) => ({
+      ...t,
+      pctVal: pct(t.marksObtained, t.maxMarks),
+    }));
+
+  return {
+    totalTests,
+    avgPct,
+    bestPct,
+    bestRankObj,
+    subjAverages,
+    recentTests,
+  };
+}

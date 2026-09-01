@@ -2,11 +2,11 @@ import React from 'react';
 import { 
   Clock, CheckCircle2, Target, Flame, TrendingUp, Calendar, ChevronRight, 
   FileText, Sparkles, Trophy, ArrowUp, ArrowDown, Minus, Circle,
-  BarChart2, Zap, BookOpen
+  BarChart2, Zap, BookOpen, Award, Activity, Grid
 } from 'lucide-react';
 import { C, subjInfo, CATEGORY_COLORS } from '../data/subjects';
 import { fmtRange, minToHM, TODAY_DATE, dowOf } from '../utils/timeHelpers';
-import { actualForDateSubject } from '../utils/analyticsHelpers';
+import { actualForDateSubject, computeMonthlyGrowth, computeTestSnapSummary, computePercentile, computeProjectedAIR } from '../utils/analyticsHelpers';
 import { TargetLockGauge } from './TargetLockGauge';
 import { XpRewardStrip } from './XpRewardStrip';
 
@@ -32,7 +32,11 @@ export function DashboardView({
   isPeriodGiven,
   catalog,
   totalRewardsGiven,
+  testResults = [],
 }) {
+  const monthlyGrowth = React.useMemo(() => computeMonthlyGrowth(studyLog || []), [studyLog]);
+  const testSnapSummary = React.useMemo(() => computeTestSnapSummary(testResults || []), [testResults]);
+
   const insights = [];
   const phys = allSubjectStats.find((s) => s.subject === 'Physics');
   if (phys && phys.count >= 2) {
@@ -102,9 +106,18 @@ export function DashboardView({
       {studyAchievements && (
         <Panel>
           <SectionTitle
-            title="Study Achievements"
+            title="Study Achievements & Monthly Growth"
             icon={BarChart2}
-            right={<button className="lk-btn-ghost" onClick={() => setTab('capture')}>Log Session <ChevronRight size={13} /></button>}
+            right={
+              <div className="flex gap-2">
+                <button className="lk-btn-ghost text-xs" onClick={() => setTab('monthly')}>
+                  <Grid size={13} className="mr-1 inline" /> Monthly Matrix
+                </button>
+                <button className="lk-btn-ghost text-xs" onClick={() => setTab('capture')}>
+                  Log Session <ChevronRight size={13} />
+                </button>
+              </div>
+            }
           />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
@@ -131,6 +144,55 @@ export function DashboardView({
               </div>
             ))}
           </div>
+
+          {/* Monthly Growth Eye-View & Subject Distribution */}
+          {monthlyGrowth && (
+            <div className="mt-4 pt-3 border-t border-gray-800 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-lg p-3" style={{ background: C.panel2, border: `1px solid ${C.border}` }}>
+                <div className="lk-eyebrow mb-1" style={{ color: C.teal }}>Monthly Study Growth & Velocity</div>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <div className="lk-mono font-bold text-lg" style={{ color: monthlyGrowth.growthPct >= 0 ? C.positive : C.negative }}>
+                      {monthlyGrowth.growthPct >= 0 ? '+' : ''}{monthlyGrowth.growthPct}% growth
+                    </div>
+                    <div className="text-xs" style={{ color: C.textFaint }}>
+                      vs previous month ({monthlyGrowth.prevHours}h)
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="lk-mono font-bold text-base" style={{ color: C.amber }}>
+                      {monthlyGrowth.dailyAvgHours} hrs/day
+                    </div>
+                    <div className="text-xs" style={{ color: C.textFaint }}>Daily avg velocity</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg p-3" style={{ background: C.panel2, border: `1px solid ${C.border}` }}>
+                <div className="lk-eyebrow mb-2" style={{ color: C.amber }}>This Month Subject Distribution</div>
+                {monthlyGrowth.subjDistribution.length > 0 ? (
+                  <div className="flex flex-col gap-1.5">
+                    {monthlyGrowth.subjDistribution.slice(0, 3).map((item) => (
+                      <div key={item.subject} className="flex items-center gap-2 text-xs">
+                        <span className="w-20 truncate font-medium" style={{ color: subjInfo(item.subject).color }}>
+                          {item.subject}
+                        </span>
+                        <div className="flex-1">
+                          <ProgressBar value={item.pctVal} color={subjInfo(item.subject).color} height={5} />
+                        </div>
+                        <span className="lk-mono" style={{ color: C.textMute, width: 44, textAlign: 'right' }}>
+                          {item.hrs}h ({item.pctVal}%)
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs" style={{ color: C.textFaint }}>Log study sessions to see monthly subject breakdown.</div>
+                )}
+              </div>
+            </div>
+          )}
+
           {studyAchievements.maxDay.min > 0 && (
             <div className="mt-3 flex items-center gap-2 text-xs rounded-lg p-2.5" style={{ background: '#1A2A1A', border: `1px solid #1E4A38` }}>
               <Zap size={13} style={{ color: C.positive, flexShrink: 0 }} />
@@ -181,6 +243,83 @@ export function DashboardView({
           </div>
         </Panel>
       </div>
+
+      {/* Test Analysis Eye-View Snap Summary */}
+      {testSnapSummary && testSnapSummary.totalTests > 0 && (
+        <Panel>
+          <SectionTitle
+            title="Test Analysis Snap Summary (At-A-Glance Status)"
+            icon={Activity}
+            right={
+              <button className="lk-btn-ghost text-xs" onClick={() => setTab('tests')}>
+                All Tests & Results <ChevronRight size={13} />
+              </button>
+            }
+          />
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <StatCard label="Total Tests" value={testSnapSummary.totalTests} icon={FileText} accent={C.amber} />
+            <StatCard label="Average Score" value={`${testSnapSummary.avgPct}%`} icon={Award} accent={C.teal} />
+            <StatCard label="Highest Score" value={`${testSnapSummary.bestPct}%`} icon={Trophy} accent={C.positive} />
+            <StatCard
+              label="Best JEE AIR"
+              value={testSnapSummary.bestRankObj ? `#${testSnapSummary.bestRankObj.rank}` : 'N/A'}
+              icon={Target}
+              accent="#A78BFA"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Subject Score Breakdown */}
+            <div className="rounded-lg p-3" style={{ background: C.bgAlt, border: `1px solid ${C.border}` }}>
+              <div className="lk-eyebrow mb-2">Subject Performance Summary</div>
+              <div className="flex flex-col gap-2">
+                {testSnapSummary.subjAverages.map((sub) => (
+                  <div key={sub.subject} className="flex items-center gap-3 text-xs">
+                    <span className="w-24 font-medium truncate" style={{ color: subjInfo(sub.subject).color }}>
+                      {sub.subject}
+                    </span>
+                    <div className="flex-1">
+                      <ProgressBar value={sub.avg} color={subjInfo(sub.subject).color} height={6} />
+                    </div>
+                    <span className="lk-mono font-bold" style={{ color: C.textMain, width: 45, textAlign: 'right' }}>
+                      {sub.avg}%
+                    </span>
+                    <span className="text-[10px]" style={{ color: C.textFaint }}>
+                      (Best {sub.highest}%)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Test Performance Snapshot */}
+            <div className="rounded-lg p-3" style={{ background: C.bgAlt, border: `1px solid ${C.border}` }}>
+              <div className="lk-eyebrow mb-2">Recent Test Results Snapshot</div>
+              <div className="flex flex-col gap-2">
+                {testSnapSummary.recentTests.map((t) => (
+                  <div key={t.id} className="flex items-center justify-between gap-2 text-xs py-1 border-b border-gray-800 last:border-0">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate" style={{ color: C.textMain }}>{t.testName}</div>
+                      <div className="text-[10px]" style={{ color: C.textFaint }}>{t.subject} &middot; {t.date}</div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {t.rank && (
+                        <span className="lk-mono text-[11px]" style={{ color: C.amber }}>
+                          #{t.rank}
+                        </span>
+                      )}
+                      <span className="lk-mono font-bold text-xs" style={{ color: C.positive }}>
+                        {t.pctVal}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Panel>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {['School', 'Institute', 'PW'].map((c) => (

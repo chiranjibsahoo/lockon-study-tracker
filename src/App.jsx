@@ -6,6 +6,7 @@ import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { DashboardView } from './components/DashboardView';
 import { TimetableView } from './components/TimetableView';
+import { MonthlyMatrixView } from './components/MonthlyMatrixView';
 import { QuickCaptureView } from './components/QuickCaptureView';
 import { TestResultsView } from './components/TestResultsView';
 import { AnalyticsView } from './components/AnalyticsView';
@@ -367,6 +368,7 @@ export default function App() {
             isPeriodGiven={isPeriodGiven}
             catalog={rewardCatalog}
             totalRewardsGiven={totalRewardsGiven}
+            testResults={testResults}
           />
         )}
 
@@ -376,6 +378,15 @@ export default function App() {
             studyLog={studyLog}
             onAddSlot={handleAddTimetableSlot}
             onDeleteSlot={handleDeleteTimetableSlot}
+          />
+        )}
+
+        {tab === 'monthly' && (
+          <MonthlyMatrixView
+            timetable={timetable}
+            studyLog={studyLog}
+            onAddStudy={handleAddStudy}
+            onDeleteStudy={handleDeleteStudy}
           />
         )}
 

@@ -1,10 +1,11 @@
 import React from 'react';
-import { BarChart3, Calendar, Zap, ClipboardList, TrendingUp, Trophy, Users } from 'lucide-react';
+import { BarChart3, Calendar, CalendarRange, Zap, ClipboardList, TrendingUp, Trophy, Users } from 'lucide-react';
 import { C } from '../data/subjects';
 
 export const TABS = [
   { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { key: 'timetable', label: 'Timetable', icon: Calendar },
+  { key: 'monthly', label: 'Monthly Matrix', icon: CalendarRange },
   { key: 'capture', label: 'Quick Capture', icon: Zap },
   { key: 'tests', label: 'Test & Results', icon: ClipboardList },
   { key: 'analytics', label: 'Analytics', icon: TrendingUp },
