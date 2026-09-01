@@ -2,27 +2,47 @@ import { T, dowOf, TODAY_DATE } from '../utils/timeHelpers';
 
 export const testResultsSeed = [];
 
-const monFriSlots = [
-  { id: 'tt-def-1', start: 390, end: 420, subject: 'English', topic: 'English / IT / PE Study', type: 'NCERT / School' },
-  { id: 'tt-def-2', start: 990, end: 1080, subject: 'Physics', topic: 'Physics Core Study', type: 'Concept Learning' },
-  { id: 'tt-def-3', start: 1200, end: 1290, subject: 'Chemistry', topic: 'Chemistry Core Study', type: 'NCERT / Practice' },
-  { id: 'tt-def-4', start: 1320, end: 1410, subject: 'Mathematics', topic: 'Maths Problem Solving', type: 'JEE Questions' },
-];
-
-const satSunSlots = [
-  { id: 'tt-sat-1', start: 480, end: 540, subject: 'Physics', topic: 'Physics Weekend Revision', type: 'Revision / JEE' },
-  { id: 'tt-sat-2', start: 540, end: 600, subject: 'Chemistry', topic: 'Chemistry Weekend Practice', type: 'Revision / JEE' },
-  { id: 'tt-sat-3', start: 600, end: 660, subject: 'Mathematics', topic: 'Maths Weekend Practice', type: 'JEE Questions' },
-];
-
 export const defaultWeeklyTimetable = {
-  Monday: monFriSlots.map(s => ({ ...s, id: `mon-${s.id}` })),
-  Tuesday: monFriSlots.map(s => ({ ...s, id: `tue-${s.id}` })),
-  Wednesday: monFriSlots.map(s => ({ ...s, id: `wed-${s.id}` })),
-  Thursday: monFriSlots.map(s => ({ ...s, id: `thu-${s.id}` })),
-  Friday: monFriSlots.map(s => ({ ...s, id: `fri-${s.id}` })),
-  Saturday: satSunSlots.map(s => ({ ...s, id: `sat-${s.id}` })),
-  Sunday: satSunSlots.map(s => ({ ...s, id: `sun-${s.id}` })),
+  Monday: [
+    { id: 'mon-1', start: 390, end: 420, subject: 'English', topic: 'English Study', type: 'NCERT / School' },
+    { id: 'mon-2', start: 990, end: 1080, subject: 'Physics', topic: 'Physics Study', type: 'Concept Learning' },
+    { id: 'mon-3', start: 1200, end: 1290, subject: 'Chemistry', topic: 'Chemistry Study', type: 'NCERT / Practice' },
+    { id: 'mon-4', start: 1320, end: 1410, subject: 'Mathematics', topic: 'Mathematics Study', type: 'JEE Questions' },
+  ],
+  Tuesday: [
+    { id: 'tue-1', start: 390, end: 420, subject: 'IT', topic: 'IT Study', type: 'NCERT / School' },
+    { id: 'tue-2', start: 990, end: 1080, subject: 'Physics', topic: 'Physics Study', type: 'Concept Learning' },
+    { id: 'tue-3', start: 1200, end: 1290, subject: 'Chemistry', topic: 'Chemistry Study', type: 'NCERT / Practice' },
+    { id: 'tue-4', start: 1320, end: 1410, subject: 'Mathematics', topic: 'Mathematics Study', type: 'JEE Questions' },
+  ],
+  Wednesday: [
+    { id: 'wed-1', start: 390, end: 420, subject: 'PE', topic: 'PE Study', type: 'NCERT / School' },
+    { id: 'wed-2', start: 990, end: 1080, subject: 'Physics', topic: 'Physics Study', type: 'Concept Learning' },
+    { id: 'wed-3', start: 1200, end: 1290, subject: 'Chemistry', topic: 'Chemistry Study', type: 'NCERT / Practice' },
+    { id: 'wed-4', start: 1320, end: 1410, subject: 'Mathematics', topic: 'Mathematics Study', type: 'JEE Questions' },
+  ],
+  Thursday: [
+    { id: 'thu-1', start: 390, end: 420, subject: 'English', topic: 'English Study', type: 'NCERT / School' },
+    { id: 'thu-2', start: 990, end: 1080, subject: 'Physics', topic: 'Physics Study', type: 'Concept Learning' },
+    { id: 'thu-3', start: 1200, end: 1290, subject: 'Chemistry', topic: 'Chemistry Study', type: 'NCERT / Practice' },
+    { id: 'thu-4', start: 1320, end: 1410, subject: 'Mathematics', topic: 'Mathematics Study', type: 'JEE Questions' },
+  ],
+  Friday: [
+    { id: 'fri-1', start: 390, end: 420, subject: 'IT', topic: 'IT Study', type: 'NCERT / School' },
+    { id: 'fri-2', start: 990, end: 1080, subject: 'Physics', topic: 'Physics Study', type: 'Concept Learning' },
+    { id: 'fri-3', start: 1200, end: 1290, subject: 'Chemistry', topic: 'Chemistry Study', type: 'NCERT / Practice' },
+    { id: 'fri-4', start: 1320, end: 1410, subject: 'Mathematics', topic: 'Mathematics Study', type: 'JEE Questions' },
+  ],
+  Saturday: [
+    { id: 'sat-1', start: 480, end: 540, subject: 'Physics', topic: 'Physics Study', type: 'Revision / JEE' },
+    { id: 'sat-2', start: 540, end: 600, subject: 'Chemistry', topic: 'Chemistry Study', type: 'Revision / JEE' },
+    { id: 'sat-3', start: 600, end: 660, subject: 'Mathematics', topic: 'Mathematics Study', type: 'JEE Questions' },
+  ],
+  Sunday: [
+    { id: 'sun-1', start: 480, end: 540, subject: 'Physics', topic: 'Physics Study', type: 'Test Preparation' },
+    { id: 'sun-2', start: 540, end: 600, subject: 'Chemistry', topic: 'Chemistry Study', type: 'Test Preparation' },
+    { id: 'sun-3', start: 600, end: 660, subject: 'Mathematics', topic: 'Mathematics Study', type: 'Test Preparation' },
+  ],
 };
 
 export const timetableSeed = defaultWeeklyTimetable;
