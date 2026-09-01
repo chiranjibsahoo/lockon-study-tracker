@@ -244,7 +244,7 @@ export function DashboardView({
         </Panel>
       </div>
 
-      {/* Test Analysis Eye-View Snap Summary */}
+      {/* Test Analysis Eye-View Snap Summary (Merged by Test Name & Category-Wise) */}
       {testSnapSummary && testSnapSummary.totalTests > 0 && (
         <Panel>
           <SectionTitle
@@ -258,8 +258,8 @@ export function DashboardView({
           />
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <StatCard label="Total Tests" value={testSnapSummary.totalTests} icon={FileText} accent={C.amber} />
-            <StatCard label="Average Score" value={`${testSnapSummary.avgPct}%`} icon={Award} accent={C.teal} />
+            <StatCard label="Total Exams Logged" value={testSnapSummary.mergedTestCount} icon={FileText} accent={C.amber} />
+            <StatCard label="Overall Avg Score" value={`${testSnapSummary.avgPct}%`} icon={Award} accent={C.teal} />
             <StatCard label="Highest Score" value={`${testSnapSummary.bestPct}%`} icon={Trophy} accent={C.positive} />
             <StatCard
               label="Best JEE AIR"
@@ -269,10 +269,10 @@ export function DashboardView({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Subject Score Breakdown */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* Subject Performance Summary */}
             <div className="rounded-lg p-3" style={{ background: C.bgAlt, border: `1px solid ${C.border}` }}>
-              <div className="lk-eyebrow mb-2">Subject Performance Summary</div>
+              <div className="lk-eyebrow mb-2">Subject Performance Averages</div>
               <div className="flex flex-col gap-2">
                 {testSnapSummary.subjAverages.map((sub) => (
                   <div key={sub.subject} className="flex items-center gap-3 text-xs">
@@ -293,29 +293,110 @@ export function DashboardView({
               </div>
             </div>
 
-            {/* Recent Test Performance Snapshot */}
+            {/* Category Performance Summary */}
             <div className="rounded-lg p-3" style={{ background: C.bgAlt, border: `1px solid ${C.border}` }}>
-              <div className="lk-eyebrow mb-2">Recent Test Results Snapshot</div>
+              <div className="lk-eyebrow mb-2">Category Performance Averages</div>
               <div className="flex flex-col gap-2">
-                {testSnapSummary.recentTests.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between gap-2 text-xs py-1 border-b border-gray-800 last:border-0">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate" style={{ color: C.textMain }}>{t.testName}</div>
-                      <div className="text-[10px]" style={{ color: C.textFaint }}>{t.subject} &middot; {t.date}</div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {t.rank && (
-                        <span className="lk-mono text-[11px]" style={{ color: C.amber }}>
-                          #{t.rank}
-                        </span>
-                      )}
-                      <span className="lk-mono font-bold text-xs" style={{ color: C.positive }}>
-                        {t.pctVal}%
+                {testSnapSummary.categoryAverages.map((cat) => {
+                  const catColor = CATEGORY_COLORS[cat.category] || C.amber;
+                  return (
+                    <div key={cat.category} className="flex items-center gap-3 text-xs">
+                      <span className="w-28 font-medium truncate" style={{ color: catColor }}>
+                        {cat.category}
+                      </span>
+                      <div className="flex-1">
+                        <ProgressBar value={cat.avg} color={catColor} height={6} />
+                      </div>
+                      <span className="lk-mono font-bold" style={{ color: C.textMain, width: 45, textAlign: 'right' }}>
+                        {cat.avg}%
+                      </span>
+                      <span className="text-[10px]" style={{ color: C.textFaint }}>
+                        ({cat.count} tests)
                       </span>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+            </div>
+          </div>
+
+          {/* Merged Recent Test Cards (Merged by Test Name & Category) */}
+          <div className="rounded-lg p-3" style={{ background: C.bgAlt, border: `1px solid ${C.border}` }}>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <div className="lk-eyebrow" style={{ color: C.amber, marginBottom: 0 }}>
+                Merged Recent Test Performance Snapshot (By Exam Name)
+              </div>
+              <span className="text-xs" style={{ color: C.textFaint }}>
+                Multi-subject exams merged automatically
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {testSnapSummary.mergedTests.slice(0, 5).map((exam) => {
+                const catColor = CATEGORY_COLORS[exam.category] || C.amber;
+
+                return (
+                  <div
+                    key={exam.key}
+                    className="p-3 rounded-lg flex flex-col gap-2"
+                    style={{ background: C.panel2, border: `1px solid ${C.border}` }}
+                  >
+                    <div className="flex items-center justify-between flex-wrap gap-2 border-b border-gray-800 pb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Chip color={catColor} bg={`${catColor}1A`} border={`${catColor}44`}>
+                          {exam.category}
+                        </Chip>
+                        <span className="font-bold text-sm truncate" style={{ color: C.textMain }}>
+                          {exam.testName}
+                        </span>
+                        <span className="text-xs" style={{ color: C.textFaint }}>
+                          &middot; {exam.date}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 flex-wrap justify-end text-xs">
+                        {exam.rank && (
+                          <span className="lk-mono" style={{ color: C.amber }}>
+                            Rank #{exam.rank}{exam.totalStudents ? `/${exam.totalStudents}` : ''}
+                          </span>
+                        )}
+                        {exam.calculatedPercentile != null && (
+                          <span className="lk-chip" style={{ color: C.teal, background: C.tealSoft, borderColor: '#1E4A44', fontFamily: 'monospace' }}>
+                            {Number(exam.calculatedPercentile).toFixed(1)}%ile
+                          </span>
+                        )}
+                        {exam.calculatedAIR && (
+                          <span className="lk-chip text-xs" style={{ color: C.positive, background: C.positiveSoft, borderColor: '#1E4A38' }}>
+                            {exam.calculatedAIR}
+                          </span>
+                        )}
+                        <span className="lk-mono font-bold text-sm" style={{ color: C.amber }}>
+                          {exam.totalObtained}/{exam.totalMax} ({exam.overallPct}%)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Subject Breakdown Pills */}
+                    <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
+                      <span className="text-[11px]" style={{ color: C.textFaint }}>Subjects:</span>
+                      {exam.subjects.map((sub, idx) => {
+                        const sInfo = subjInfo(sub.subject);
+                        return (
+                          <span
+                            key={idx}
+                            className="px-2 py-0.5 rounded text-[11px] lk-mono flex items-center gap-1"
+                            style={{ background: C.bgAlt, border: `1px solid ${C.border}` }}
+                          >
+                            <span style={{ color: sInfo.color, fontWeight: 600 }}>{sInfo.label}:</span>
+                            <span style={{ color: C.textMain }}>{sub.marksObtained}/{sub.maxMarks}</span>
+                            <span style={{ color: sub.pctVal >= 75 ? C.positive : C.amber }}>({sub.pctVal}%)</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </Panel>

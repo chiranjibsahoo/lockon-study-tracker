@@ -300,19 +300,83 @@ export function computeMonthlyGrowth(studyLog) {
   };
 }
 
+export function groupTestsByName(testResults) {
+  if (!testResults || !testResults.length) return [];
+
+  const groups = {};
+
+  testResults.forEach((t) => {
+    const key = `${t.category || 'Other'}_${t.testName}_${t.date}`;
+    if (!groups[key]) {
+      groups[key] = {
+        key,
+        testName: t.testName,
+        category: t.category || 'Other',
+        date: t.date,
+        difficulty: t.difficulty || 'Moderate',
+        testType: t.testType || 'Test',
+        rank: t.rank,
+        totalStudents: t.totalStudents,
+        percentile: t.percentile,
+        expectedRank: t.expectedRank,
+        totalObtained: 0,
+        totalMax: 0,
+        subjects: [],
+      };
+    }
+
+    groups[key].totalObtained += Number(t.marksObtained) || 0;
+    groups[key].totalMax += Number(t.maxMarks) || 100;
+    
+    if (t.rank && (!groups[key].rank || t.rank < groups[key].rank)) {
+      groups[key].rank = t.rank;
+    }
+    if (t.totalStudents && !groups[key].totalStudents) {
+      groups[key].totalStudents = t.totalStudents;
+    }
+    if (t.percentile != null && !groups[key].percentile) {
+      groups[key].percentile = t.percentile;
+    }
+    if (t.expectedRank && !groups[key].expectedRank) {
+      groups[key].expectedRank = t.expectedRank;
+    }
+
+    groups[key].subjects.push({
+      subject: t.subject,
+      marksObtained: t.marksObtained,
+      maxMarks: t.maxMarks,
+      pctVal: pct(t.marksObtained, t.maxMarks),
+    });
+  });
+
+  return Object.values(groups)
+    .map((g) => ({
+      ...g,
+      overallPct: g.totalMax > 0 ? Math.round((g.totalObtained / g.totalMax) * 1000) / 10 : 0,
+      calculatedPercentile: g.percentile ?? computePercentile(g.rank, g.totalStudents, null),
+      calculatedAIR: g.expectedRank || computeProjectedAIR(g.rank, g.totalStudents, null),
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
 export function computeTestSnapSummary(testResults) {
   if (!testResults || !testResults.length) {
     return {
       totalTests: 0,
+      mergedTestCount: 0,
       avgPct: 0,
       bestPct: 0,
-      bestRank: null,
+      bestRankObj: null,
       subjAverages: [],
-      recentTests: [],
+      categoryAverages: [],
+      mergedTests: [],
     };
   }
 
+  const mergedTests = groupTestsByName(testResults);
   const totalTests = testResults.length;
+  const mergedTestCount = mergedTests.length;
+
   const pcts = testResults.map((t) => pct(t.marksObtained, t.maxMarks));
   const avgPct = Math.round((pcts.reduce((a, b) => a + b, 0) / totalTests) * 10) / 10;
   const bestPct = Math.max(...pcts);
@@ -337,20 +401,32 @@ export function computeTestSnapSummary(testResults) {
     highest: data.highest,
   })).sort((a, b) => b.avg - a.avg);
 
-  const recentTests = [...testResults]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 5)
-    .map((t) => ({
-      ...t,
-      pctVal: pct(t.marksObtained, t.maxMarks),
-    }));
+  // Category-wise performance summary
+  const catMap = {};
+  testResults.forEach((t) => {
+    const p = pct(t.marksObtained, t.maxMarks);
+    const cat = t.category || 'Other';
+    if (!catMap[cat]) catMap[cat] = { total: 0, count: 0, highest: 0 };
+    catMap[cat].total += p;
+    catMap[cat].count += 1;
+    if (p > catMap[cat].highest) catMap[cat].highest = p;
+  });
+
+  const categoryAverages = Object.entries(catMap).map(([category, data]) => ({
+    category,
+    avg: Math.round((data.total / data.count) * 10) / 10,
+    count: data.count,
+    highest: data.highest,
+  })).sort((a, b) => b.avg - a.avg);
 
   return {
     totalTests,
+    mergedTestCount,
     avgPct,
     bestPct,
     bestRankObj,
     subjAverages,
-    recentTests,
+    categoryAverages,
+    mergedTests,
   };
 }
