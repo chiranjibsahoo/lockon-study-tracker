@@ -1,4 +1,18 @@
 import { dowOf, TODAY_DATE } from './timeHelpers';
+import { defaultWeeklyTimetable } from '../data/initialData';
+
+export function getSlotsForDow(timetable, dow) {
+  if (timetable && Array.isArray(timetable[dow]) && timetable[dow].length > 0) {
+    return timetable[dow];
+  }
+  return defaultWeeklyTimetable[dow] || [];
+}
+
+export function plannedForDate(timetable, dateStr) {
+  const dow = dowOf(dateStr);
+  const slots = getSlotsForDow(timetable, dow);
+  return slots.reduce((a, s) => a + (s.end - s.start), 0);
+}
 
 /** Array of 7 date strings (YYYY-MM-DD) for the current Mon-Sun week */
 export const CURRENT_WEEK_DATES = (() => {

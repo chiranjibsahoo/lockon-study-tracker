@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { C, SUBJECTS, subjInfo } from '../data/subjects';
 import { fmtRange, minToHM, dowOf, getTodayISO } from '../utils/timeHelpers';
-import { actualForDate, plannedForDate } from '../utils/analyticsHelpers';
+import { actualForDate, plannedForDate, getSlotsForDow } from '../utils/analyticsHelpers';
 
 export function MonthlyMatrixView({ timetable, studyLog, onAddStudy, onDeleteStudy }) {
   const todayIso = getTodayISO();
@@ -160,7 +160,7 @@ export function MonthlyMatrixView({ timetable, studyLog, onAddStudy, onDeleteStu
       {/* Full Month Matrix List */}
       <div className="flex flex-col gap-3">
         {monthDays.map((day) => {
-          const plannedSlots = timetable[day.dow] || [];
+          const plannedSlots = getSlotsForDow(timetable, day.dow);
           const filteredSlots = subjectFilter === 'All' ? plannedSlots : plannedSlots.filter((s) => s.subject === subjectFilter);
           const filteredLogs = subjectFilter === 'All' ? day.dayLogs : day.dayLogs.filter((s) => s.subject === subjectFilter);
           const isInlineOpen = editingDate === day.dateIso;

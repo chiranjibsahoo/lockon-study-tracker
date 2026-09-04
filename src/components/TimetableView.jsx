@@ -3,7 +3,7 @@ import { Calendar, Lock, BarChart3, Plus, Trash2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { C, subjInfo } from '../data/subjects';
 import { fmtRange, minToHM, TODAY_DATE, dowOf, fmtT, T } from '../utils/timeHelpers';
-import { plannedForDate, actualForDate, actualForDateSubject, CURRENT_WEEK_DATES } from '../utils/analyticsHelpers';
+import { plannedForDate, actualForDate, actualForDateSubject, CURRENT_WEEK_DATES, getSlotsForDow } from '../utils/analyticsHelpers';
 
 function fixedBlocksFor(dow) {
   if (dow === 'Saturday') {
@@ -33,7 +33,7 @@ export function TimetableView({ timetable, studyLog, onAddSlot, onDeleteSlot }) 
   const [activeDate, setActiveDate] = useState(TODAY_DATE);
   const [showAddModal, setShowAddModal] = useState(false);
   const dow = dowOf(activeDate);
-  const items = timetable[dow] || [];
+  const items = getSlotsForDow(timetable, dow);
   const fixed = fixedBlocksFor(dow);
   const isToday = activeDate === TODAY_DATE;
   const dayPlanned = plannedForDate(timetable, activeDate);

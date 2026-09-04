@@ -19,14 +19,18 @@ export function loadStoredData() {
       ? JSON.parse(localStorage.getItem(KEYS.TEST_RESULTS))
       : testResultsSeed;
 
-    let timetable = localStorage.getItem(KEYS.TIMETABLE)
+    let rawTimetable = localStorage.getItem(KEYS.TIMETABLE)
       ? JSON.parse(localStorage.getItem(KEYS.TIMETABLE))
       : timetableSeed;
 
-    // If loaded timetable is completely empty across all days, initialize default recurring plan
-    const hasAnySlot = Object.values(timetable || {}).some((arr) => Array.isArray(arr) && arr.length > 0);
-    if (!hasAnySlot) {
-      timetable = timetableSeed;
+    // Ensure every single day (Mon-Sun) has its full default plan if empty
+    const timetable = { ...defaultWeeklyTimetable };
+    if (rawTimetable && typeof rawTimetable === 'object') {
+      Object.keys(defaultWeeklyTimetable).forEach((dow) => {
+        if (Array.isArray(rawTimetable[dow]) && rawTimetable[dow].length > 0) {
+          timetable[dow] = rawTimetable[dow];
+        }
+      });
     }
 
     const studyLog = localStorage.getItem(KEYS.STUDY_LOG)
