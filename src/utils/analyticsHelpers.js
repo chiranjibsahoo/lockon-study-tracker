@@ -74,11 +74,6 @@ export function computeProjectedAIR(rank, totalStudents, explicitExpectedRank) {
   return null;
 }
 
-export function plannedForDate(timetable, dateStr) {
-  const dow = dowOf(dateStr);
-  return (timetable[dow] || []).reduce((a, s) => a + (s.end - s.start), 0);
-}
-
 export function actualForDate(studyLog, dateStr) {
   return studyLog.filter((e) => e.date === dateStr).reduce((a, e) => a + e.duration, 0);
 }
