@@ -34,14 +34,12 @@ export const defaultWeeklyTimetable = {
     { id: 'fri-4', start: 1320, end: 1410, subject: 'Mathematics', topic: 'Mathematics Study', type: 'JEE Questions' },
   ],
   Saturday: [
-    { id: 'sat-1', start: 480, end: 540, subject: 'Physics', topic: 'Physics Study', type: 'Revision / JEE' },
-    { id: 'sat-2', start: 540, end: 600, subject: 'Chemistry', topic: 'Chemistry Study', type: 'Revision / JEE' },
-    { id: 'sat-3', start: 600, end: 660, subject: 'Mathematics', topic: 'Mathematics Study', type: 'JEE Questions' },
+    { id: 'sat-1', start: 1200, end: 1290, subject: 'Physics', topic: 'Physics Study', type: 'Revision / JEE' },
+    { id: 'sat-2', start: 1320, end: 1410, subject: 'Chemistry', topic: 'Chemistry Study', type: 'Revision / JEE' },
   ],
   Sunday: [
-    { id: 'sun-1', start: 480, end: 540, subject: 'Physics', topic: 'Physics Study', type: 'Test Preparation' },
-    { id: 'sun-2', start: 540, end: 600, subject: 'Chemistry', topic: 'Chemistry Study', type: 'Test Preparation' },
-    { id: 'sun-3', start: 600, end: 660, subject: 'Mathematics', topic: 'Mathematics Study', type: 'Test Preparation' },
+    { id: 'sun-1', start: 1200, end: 1290, subject: 'Physics', topic: 'Physics Study', type: 'Test Preparation' },
+    { id: 'sun-2', start: 1320, end: 1410, subject: 'Chemistry', topic: 'Chemistry Study', type: 'Test Preparation' },
   ],
 };
 

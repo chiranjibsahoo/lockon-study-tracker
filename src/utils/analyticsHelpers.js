@@ -2,6 +2,11 @@ import { dowOf, TODAY_DATE } from './timeHelpers';
 import { defaultWeeklyTimetable } from '../data/initialData';
 
 export function getSlotsForDow(timetable, dow) {
+  if (['Saturday', 'Sunday'].includes(dow)) {
+    if (!timetable || !timetable[dow] || !timetable[dow].some((s) => s.start === 1200)) {
+      return defaultWeeklyTimetable[dow] || [];
+    }
+  }
   if (timetable && Array.isArray(timetable[dow]) && timetable[dow].length > 0) {
     return timetable[dow];
   }

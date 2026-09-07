@@ -23,11 +23,14 @@ export function loadStoredData() {
       ? JSON.parse(localStorage.getItem(KEYS.TIMETABLE))
       : timetableSeed;
 
-    // Ensure every single day (Mon-Sun) has its full default plan if empty
+    // Ensure every single day (Mon-Sun) has its full default plan
     const timetable = { ...defaultWeeklyTimetable };
     if (rawTimetable && typeof rawTimetable === 'object') {
       Object.keys(defaultWeeklyTimetable).forEach((dow) => {
-        if (Array.isArray(rawTimetable[dow]) && rawTimetable[dow].length > 0) {
+        if (['Saturday', 'Sunday'].includes(dow)) {
+          // Strictly enforce new Saturday & Sunday evening slots (8:00-9:30 PM Physics, 10:00-11:30 PM Chemistry)
+          timetable[dow] = defaultWeeklyTimetable[dow];
+        } else if (Array.isArray(rawTimetable[dow]) && rawTimetable[dow].length > 0) {
           timetable[dow] = rawTimetable[dow];
         }
       });
