@@ -288,7 +288,8 @@ export function MonthlyMatrixView({ timetable, studyLog, onAddStudy, onDeleteStu
                       {filteredSlots.map((slot, idx) => {
                         const sInfo = subjInfo(slot.subject);
                         const dur = slot.end - slot.start;
-                        const isLogged = day.dayLogs.some((l) => l.subject === slot.subject);
+                        const loggedEntry = day.dayLogs.find((l) => l.subject === slot.subject);
+                        const isLogged = Boolean(loggedEntry);
 
                         return (
                           <div
@@ -307,22 +308,26 @@ export function MonthlyMatrixView({ timetable, studyLog, onAddStudy, onDeleteStu
                             </div>
                             <button
                               type="button"
-                              className="lk-chip cursor-pointer hover:bg-emerald-950 flex-shrink-0"
+                              className="lk-chip cursor-pointer hover:opacity-90 flex-shrink-0"
                               style={{
                                 color: isLogged ? C.positive : C.amber,
                                 background: isLogged ? C.positiveSoft : C.amberSoft,
                                 borderColor: isLogged ? '#1E4A38' : '#4A3A20',
                               }}
                               onClick={() => {
-                                onAddStudy({
-                                  date: day.dateIso,
-                                  subject: slot.subject,
-                                  duration: dur,
-                                  topic: slot.topic,
-                                  studyType: slot.type || 'Concept Learning',
-                                });
+                                if (isLogged && onDeleteStudy && loggedEntry) {
+                                  onDeleteStudy(loggedEntry.id);
+                                } else {
+                                  onAddStudy({
+                                    date: day.dateIso,
+                                    subject: slot.subject,
+                                    duration: dur,
+                                    topic: slot.topic,
+                                    studyType: slot.type || 'Concept Learning',
+                                  });
+                                }
                               }}
-                              title="Click to mark Padh Liya (auto-log session)"
+                              title={isLogged ? 'Click to unmark session' : 'Click to mark Padh Liya (auto-log session)'}
                             >
                               <CheckCircle2 size={11} className="mr-1 inline" />
                               {isLogged ? 'Padh Liya ✓' : 'Mark Padh Liya'}

@@ -193,5 +193,15 @@ function exportHumanReadableData(d) {
       trSheet.appendRow([row.id, row.date, row.category, row.subject, row.testName, row.marksObtained, row.maxMarks, row.rank || "-", row.percentile || "-", row.expectedRank || "-", row.difficulty]);
     });
   }
+
+  // Monthly Plan vs Actual Sheet
+  if (d.studyLog && d.studyLog.length) {
+    var matrixSheet = ss.getSheetByName("Monthly Plan vs Actual") || ss.insertSheet("Monthly Plan vs Actual");
+    matrixSheet.clear();
+    matrixSheet.appendRow(["Date", "Subject", "Actual Duration (Min)", "Topic", "Study Type", "Status"]);
+    d.studyLog.forEach(function(row) {
+      matrixSheet.appendRow([row.date, row.subject, row.duration, row.topic || "Daily Study", row.studyType || "Concept Learning", "Padh Liya ✓"]);
+    });
+  }
 }
 `;

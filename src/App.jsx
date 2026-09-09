@@ -132,6 +132,23 @@ export default function App() {
     }
   }, [testResults, timetable, studyLog, xpEvents, xpSpent, redeemed, rewardCatalog, givenPeriodRewards, profileSettings, googleSheetUrl]);
 
+  function mergeArrayData(localArr = [], remoteArr = [], getUniqueKey) {
+    const map = new Map();
+    (remoteArr || []).forEach((item) => {
+      if (item) {
+        const k = getUniqueKey ? getUniqueKey(item) : (item.id || JSON.stringify(item));
+        map.set(k, item);
+      }
+    });
+    (localArr || []).forEach((item) => {
+      if (item) {
+        const k = getUniqueKey ? getUniqueKey(item) : (item.id || JSON.stringify(item));
+        map.set(k, item);
+      }
+    });
+    return Array.from(map.values());
+  }
+
   async function handleSyncGoogleSheets(urlToSync, silent = false) {
     const targetUrl = urlToSync || googleSheetUrl;
     if (!targetUrl) return;
@@ -142,17 +159,27 @@ export default function App() {
 
     if (remoteData) {
       const jsonStr = JSON.stringify(remoteData);
-      // Skip state update if remote data hasn't changed
       if (jsonStr === lastRemoteJsonRef.current) return;
       lastRemoteJsonRef.current = jsonStr;
 
       isRemoteSyncRef.current = true;
-      if (remoteData.testResults) setTestResults(remoteData.testResults);
+      if (remoteData.testResults) {
+        setTestResults((prev) => mergeArrayData(prev, remoteData.testResults, (t) => t.id || `${t.date}_${t.testName}_${t.subject}`));
+      }
       if (remoteData.timetable) setTimetable(remoteData.timetable);
-      if (remoteData.studyLog) setStudyLog(remoteData.studyLog);
-      if (remoteData.xpEvents) setXpEvents(remoteData.xpEvents);
-      if (remoteData.xpSpent !== undefined) setXpSpent(remoteData.xpSpent);
-      if (remoteData.redeemed) setRedeemed(remoteData.redeemed);
+      if (remoteData.studyLog) {
+        setStudyLog((prev) => {
+          const merged = mergeArrayData(prev, remoteData.studyLog, (e) => e.id || `${e.date}_${e.subject}_${e.duration}_${e.topic}`);
+          return merged.sort((a, b) => b.date.localeCompare(a.date));
+        });
+      }
+      if (remoteData.xpEvents) {
+        setXpEvents((prev) => mergeArrayData(prev, remoteData.xpEvents, (e) => e.id || `${e.date}_${e.label}`));
+      }
+      if (remoteData.xpSpent !== undefined) setXpSpent((prev) => Math.max(prev, remoteData.xpSpent));
+      if (remoteData.redeemed) {
+        setRedeemed((prev) => mergeArrayData(prev, remoteData.redeemed, (r) => r.id || `${r.redeemedAt}_${r.name}`));
+      }
       if (remoteData.rewardCatalog) setRewardCatalog(remoteData.rewardCatalog);
       if (remoteData.givenPeriodRewards) setGivenPeriodRewards(remoteData.givenPeriodRewards);
       if (remoteData.profileSettings) setProfileSettings(remoteData.profileSettings);
