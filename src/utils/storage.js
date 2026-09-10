@@ -15,8 +15,12 @@ const KEYS = {
 
 export function loadStoredData() {
   try {
-    const testResults = localStorage.getItem(KEYS.TEST_RESULTS)
+    let rawTestResults = localStorage.getItem(KEYS.TEST_RESULTS)
       ? JSON.parse(localStorage.getItem(KEYS.TEST_RESULTS))
+      : testResultsSeed;
+
+    const testResults = (rawTestResults && Array.isArray(rawTestResults) && rawTestResults.length > 0)
+      ? rawTestResults
       : testResultsSeed;
 
     let rawTimetable = localStorage.getItem(KEYS.TIMETABLE)

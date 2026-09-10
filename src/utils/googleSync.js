@@ -157,10 +157,29 @@ function doPost(e) {
     if (contents.action === "saveData" && contents.data) {
       var ss = SpreadsheetApp.getActiveSpreadsheet();
       var sheet = ss.getSheetByName("LOCKON_DB") || ss.insertSheet("LOCKON_DB");
-      sheet.getRange("A1").setValue(JSON.stringify(contents.data));
+      
+      var existingCell = sheet.getRange("A1").getValue();
+      var existingData = {};
+      if (existingCell) {
+        try { existingData = JSON.parse(existingCell); } catch(err) {}
+      }
+
+      var newData = contents.data;
+
+      // Preserve existing testResults if incoming payload is empty
+      if ((!newData.testResults || !newData.testResults.length) && existingData.testResults && existingData.testResults.length) {
+        newData.testResults = existingData.testResults;
+      }
+
+      // Preserve existing studyLog if incoming payload is empty
+      if ((!newData.studyLog || !newData.studyLog.length) && existingData.studyLog && existingData.studyLog.length) {
+        newData.studyLog = existingData.studyLog;
+      }
+
+      sheet.getRange("A1").setValue(JSON.stringify(newData));
       
       // Format human readable sheets for easy viewing
-      exportHumanReadableData(contents.data);
+      exportHumanReadableData(newData);
       
       return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
         .setMimeType(ContentService.MimeType.JSON);
