@@ -41,11 +41,22 @@ export function Header({ profileSettings, streak, googleSheetUrl, onOpenSettings
                 background: isSyncing ? `${C.amber}1A` : '#10B9811A',
                 borderColor: isSyncing ? '#4A3A20' : '#10B98144',
               }}
-              onClick={onManualSync || onOpenSettings}
-              title="Click to sync immediately with Google Sheet"
+              onClick={onOpenSettings}
+              title="Cloud Auto-Sync is 100% Active in background (Syncs on entry & every 10s)"
             >
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: isSyncing ? C.amber : '#10B981',
+                  marginRight: 6,
+                  boxShadow: isSyncing ? '0 0 6px #F0894A' : '0 0 6px #10B981',
+                }}
+              />
               <Cloud size={11} className={`mr-1 inline ${isSyncing ? 'animate-spin text-amber-400' : 'text-emerald-400'}`} />
-              {isSyncing ? 'Syncing...' : 'Live Auto-Sync'}
+              {isSyncing ? 'Auto-Syncing...' : 'Auto-Sync Active'}
             </span>
           ) : null}
           <span className="lk-chip hidden md:inline-flex" style={{ color: C.teal, background: C.tealSoft, borderColor: '#1E4A44' }}>

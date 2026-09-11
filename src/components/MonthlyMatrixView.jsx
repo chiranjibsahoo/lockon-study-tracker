@@ -90,24 +90,31 @@ export function MonthlyMatrixView({ timetable, studyLog, onAddStudy, onDeleteStu
         icon={CalendarRange}
         right={
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            {onManualSync && (
-              <button
-                type="button"
-                className="lk-chip cursor-pointer flex items-center gap-1.5"
+            <div
+              className="lk-chip flex items-center gap-1.5"
+              style={{
+                color: isSyncing ? C.amber : '#10B981',
+                background: isSyncing ? `${C.amber}1A` : '#10B9811A',
+                borderColor: isSyncing ? '#4A3A20' : '#10B98144',
+                padding: '5px 11px',
+                fontSize: 12,
+              }}
+              title="Every entry is 100% automatically saved and synced with Google Sheet"
+            >
+              <span
                 style={{
-                  color: isSyncing ? C.amber : '#10B981',
-                  background: isSyncing ? `${C.amber}1A` : '#10B9811A',
-                  borderColor: isSyncing ? '#4A3A20' : '#10B98144',
-                  padding: '5px 11px',
-                  fontSize: 12,
+                  display: 'inline-block',
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: isSyncing ? C.amber : '#10B981',
+                  marginRight: 4,
+                  boxShadow: isSyncing ? '0 0 6px #F0894A' : '0 0 6px #10B981',
                 }}
-                onClick={onManualSync}
-                title="Click to manually push & pull data with Google Sheet"
-              >
-                <Cloud size={13} className={isSyncing ? 'animate-spin text-amber-400' : 'text-emerald-400'} />
-                {isSyncing ? 'Syncing...' : 'Sync Sheet Now'}
-              </button>
-            )}
+              />
+              <Cloud size={13} className={isSyncing ? 'animate-spin text-amber-400' : 'text-emerald-400'} />
+              {isSyncing ? 'Auto-Syncing to Sheet...' : 'Cloud Auto-Sync Active'}
+            </div>
             <div className="flex items-center gap-1">
               <button className="lk-btn-ghost py-1 px-2.5" onClick={() => changeMonth(-1)}>
                 <ChevronLeft size={14} />

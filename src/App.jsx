@@ -164,7 +164,7 @@ export default function App() {
   }
 
   async function handleSyncGoogleSheets(urlToSync, silent = false) {
-    const targetUrl = urlToSync || googleSheetUrl;
+    const targetUrl = urlToSync || activeSheetUrl;
     if (!targetUrl) return;
     if (!silent) setIsSyncing(true);
     
