@@ -16,6 +16,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { EditTestModal } from './components/EditTestModal';
 
 import { SUBJECTS } from './data/subjects';
+import { DEFAULT_GOOGLE_SHEET_URL } from './data/initialData';
 import { TODAY_DATE } from './utils/timeHelpers';
 import { 
   loadStoredData, saveStoredData, exportBackupJSON, clearLocalStorage 
