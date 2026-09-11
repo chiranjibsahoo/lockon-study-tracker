@@ -2,7 +2,7 @@ import React from 'react';
 import { Target, Flame, Settings, Cloud } from 'lucide-react';
 import { C } from '../data/subjects';
 
-export function Header({ profileSettings, streak, googleSheetUrl, onOpenSettings }) {
+export function Header({ profileSettings, streak, googleSheetUrl, onOpenSettings, isSyncing, onManualSync }) {
   return (
     <div style={{ borderBottom: `1px solid ${C.border}`, background: C.bgAlt }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3 min-w-0">
@@ -36,11 +36,16 @@ export function Header({ profileSettings, streak, googleSheetUrl, onOpenSettings
           {googleSheetUrl ? (
             <span
               className="lk-chip cursor-pointer"
-              style={{ color: '#10B981', background: '#10B9811A', borderColor: '#10B98144' }}
-              onClick={onOpenSettings}
-              title="Real-time Auto-Syncing with Google Sheet (Every 10s & on Focus)"
+              style={{
+                color: isSyncing ? C.amber : '#10B981',
+                background: isSyncing ? `${C.amber}1A` : '#10B9811A',
+                borderColor: isSyncing ? '#4A3A20' : '#10B98144',
+              }}
+              onClick={onManualSync || onOpenSettings}
+              title="Click to sync immediately with Google Sheet"
             >
-              <Cloud size={11} className="mr-1 inline text-emerald-400" /> Live Auto-Sync
+              <Cloud size={11} className={`mr-1 inline ${isSyncing ? 'animate-spin text-amber-400' : 'text-emerald-400'}`} />
+              {isSyncing ? 'Syncing...' : 'Live Auto-Sync'}
             </span>
           ) : null}
           <span className="lk-chip hidden md:inline-flex" style={{ color: C.teal, background: C.tealSoft, borderColor: '#1E4A44' }}>

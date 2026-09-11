@@ -57,6 +57,9 @@ export default function App() {
 
   const isRemoteSyncRef = useRef(false);
   const lastRemoteJsonRef = useRef('');
+  const lastLocalEditTimeRef = useRef(0);
+
+  const activeSheetUrl = (googleSheetUrl && googleSheetUrl.trim()) || DEFAULT_GOOGLE_SHEET_URL;
 
   // 1. Initial Cloud Sync on Mount + Parse URL query param if present
   useEffect(() => {
@@ -69,17 +72,19 @@ export default function App() {
         return;
       }
     }
-    if (googleSheetUrl) {
-      handleSyncGoogleSheets(googleSheetUrl, true);
+    if (activeSheetUrl) {
+      handleSyncGoogleSheets(activeSheetUrl, true);
     }
   }, []);
 
   // 2. Realtime Auto-Polling (every 10s) & Tab-Focus Sync
   useEffect(() => {
-    if (!googleSheetUrl) return;
+    if (!activeSheetUrl) return;
 
     const pollSync = () => {
-      handleSyncGoogleSheets(googleSheetUrl, true);
+      // If user recently edited locally within 8 seconds, don't poll to prevent race condition
+      if (Date.now() - lastLocalEditTimeRef.current < 8000) return;
+      handleSyncGoogleSheets(activeSheetUrl, true);
     };
 
     // Auto-poll every 10 seconds
@@ -88,6 +93,7 @@ export default function App() {
     // Sync immediately when user switches back to this tab / unlocks phone
     const handleFocusOrVisible = () => {
       if (document.visibilityState === 'visible') {
+        if (Date.now() - lastLocalEditTimeRef.current < 8000) return;
         pollSync();
       }
     };
@@ -100,9 +106,30 @@ export default function App() {
       window.removeEventListener('focus', handleFocusOrVisible);
       document.removeEventListener('visibilitychange', handleFocusOrVisible);
     };
-  }, [googleSheetUrl]);
+  }, [activeSheetUrl]);
 
-  // 3. Save to LocalStorage + Cloud on state changes
+  function persistAndSync(overrides = {}) {
+    lastLocalEditTimeRef.current = Date.now();
+    const nextState = {
+      testResults,
+      timetable,
+      studyLog,
+      xpEvents,
+      xpSpent,
+      redeemed,
+      rewardCatalog,
+      givenPeriodRewards,
+      profileSettings,
+      googleSheetUrl: activeSheetUrl,
+      ...overrides,
+    };
+    saveStoredData(nextState);
+    if (activeSheetUrl) {
+      saveToGoogleSheet(activeSheetUrl, nextState);
+    }
+  }
+
+  // 3. Fallback save to LocalStorage on state changes
   useEffect(() => {
     const currentState = {
       testResults,
@@ -114,23 +141,10 @@ export default function App() {
       rewardCatalog,
       givenPeriodRewards,
       profileSettings,
-      googleSheetUrl,
+      googleSheetUrl: activeSheetUrl,
     };
-
-    // Always update local storage
     saveStoredData(currentState);
-
-    // If change was brought by a remote pull, skip posting back to cloud to avoid unnecessary network traffic
-    if (isRemoteSyncRef.current) {
-      isRemoteSyncRef.current = false;
-      return;
-    }
-
-    // User made a local edit -> push immediately to Google Sheet
-    if (googleSheetUrl) {
-      saveToGoogleSheet(googleSheetUrl, currentState);
-    }
-  }, [testResults, timetable, studyLog, xpEvents, xpSpent, redeemed, rewardCatalog, givenPeriodRewards, profileSettings, googleSheetUrl]);
+  }, [testResults, timetable, studyLog, xpEvents, xpSpent, redeemed, rewardCatalog, givenPeriodRewards, profileSettings, activeSheetUrl]);
 
   function mergeArrayData(localArr = [], remoteArr = [], getUniqueKey) {
     const map = new Map();
@@ -242,42 +256,58 @@ export default function App() {
       }
     }
     setSaveMsg({ type: 'study', text: `Saved — +10 XP logged for ${entry.subject}.${extraMsg}` });
+
+    // Explicitly push immediately to Google Sheet & LocalStorage
+    persistAndSync({ studyLog: updatedLog });
   }
 
   function handleDeleteStudy(id) {
-    setStudyLog((prev) => prev.filter((e) => e.id !== id));
+    const updated = studyLog.filter((e) => e.id !== id);
+    setStudyLog(updated);
+    persistAndSync({ studyLog: updated });
   }
 
   function handleAddTest(entry) {
     const prevTest = subjectHistory(testResults, entry.subject).slice(-1)[0];
     const newTest = { id: `t${Date.now()}`, ...entry };
-    setTestResults((prev) => [...prev, newTest]);
+    const updatedTests = [...testResults, newTest];
+    setTestResults(updatedTests);
     const xp = testXP(newTest, prevTest);
     const p = pct(newTest.marksObtained, newTest.maxMarks);
     if (xp > 0) addXpEvent(`${entry.subject} — ${entry.testName} scored ${p}%`, xp, entry.date);
     setSaveMsg({ type: 'test', text: `Saved — ${p}% recorded${xp ? `, +${xp} XP earned.` : '.'}` });
+
+    persistAndSync({ testResults: updatedTests });
   }
 
   function handleUpdateTest(updatedTest) {
-    setTestResults((prev) => prev.map((t) => (t.id === updatedTest.id ? updatedTest : t)));
+    const updatedTests = testResults.map((t) => (t.id === updatedTest.id ? updatedTest : t));
+    setTestResults(updatedTests);
+    persistAndSync({ testResults: updatedTests });
   }
 
   function handleDeleteTest(id) {
-    setTestResults((prev) => prev.filter((t) => t.id !== id));
+    const updatedTests = testResults.filter((t) => t.id !== id);
+    setTestResults(updatedTests);
+    persistAndSync({ testResults: updatedTests });
   }
 
   function handleAddTimetableSlot(dow, slot) {
-    setTimetable((prev) => ({
-      ...prev,
-      [dow]: [...(prev[dow] || []), slot].sort((a, b) => a.start - b.start),
-    }));
+    const updatedTT = {
+      ...timetable,
+      [dow]: [...(timetable[dow] || []), slot].sort((a, b) => a.start - b.start),
+    };
+    setTimetable(updatedTT);
+    persistAndSync({ timetable: updatedTT });
   }
 
   function handleDeleteTimetableSlot(dow, slotId) {
-    setTimetable((prev) => ({
-      ...prev,
-      [dow]: (prev[dow] || []).filter((s, idx) => (s.id ? s.id !== slotId : idx !== slotId)),
-    }));
+    const updatedTT = {
+      ...timetable,
+      [dow]: (timetable[dow] || []).filter((s, idx) => (s.id ? s.id !== slotId : idx !== slotId)),
+    };
+    setTimetable(updatedTT);
+    persistAndSync({ timetable: updatedTT });
   }
 
   function handleRedeem(item) {
@@ -365,8 +395,10 @@ export default function App() {
       <Header
         profileSettings={profileSettings}
         streak={streak}
-        googleSheetUrl={googleSheetUrl}
+        googleSheetUrl={activeSheetUrl}
         onOpenSettings={() => setShowSettings(true)}
+        isSyncing={isSyncing}
+        onManualSync={() => handleSyncGoogleSheets(activeSheetUrl, false)}
       />
 
       <Navigation tab={tab} setTab={setTab} />
@@ -414,6 +446,8 @@ export default function App() {
             studyLog={studyLog}
             onAddStudy={handleAddStudy}
             onDeleteStudy={handleDeleteStudy}
+            isSyncing={isSyncing}
+            onManualSync={() => handleSyncGoogleSheets(activeSheetUrl, false)}
           />
         )}
 
